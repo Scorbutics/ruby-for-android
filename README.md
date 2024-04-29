@@ -15,9 +15,7 @@ The compiled Ruby comes with :
 Which are all the gems embedded in ruby basic install, meaning that you will have a full featured CRuby env running on Android.
 You can of course omit some gems and not use all those libraries.
 
-At the moment, it will run on Android 8.0+. Also, only arm64-v8a is currently tested. A support of armeabi-v7a is also planned, but I do not know when it will be achieved.
-
-For now, as the CMake build system here is quite generic, I think you can adapt it quite easily to add the support yourself.
+It will run on at least Android 8 and no support is planned for earlier versions.
 
 Note for those who are on Windows
 ===
@@ -96,6 +94,6 @@ For quality of life purpose, I provided a plain `setup_ruby.sh` shell script tha
 Limitations
 ===
 
-- I currently do not support Android version < 8 (and I am not sure I will)
+- Do not support Android version < 8
 - You need docker, or an Unix-based environment to build.
 - Full ruby output is ~27Mo, that's HUGE on embedded devices. If you're looking for a lightweight ruby implementation, look at [MRuby](https://github.com/mruby/mruby) instead
