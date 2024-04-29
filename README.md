@@ -19,7 +19,19 @@ At the moment, it will run on Android 8.0+. Also, only arm64-v8a is currently te
 
 For now, as the CMake build system here is quite generic, I think you can adapt it quite easily to add the support yourself.
 
+Note for those who are on Windows
+===
+
+You should be able to build everything with docker, just look at the shell scripts that are mentioned here and create your own docker command line.
+It should not be really complicated.
+
 Preparation
+===
+1. Install docker, if not already present on your host
+2. Clone the following repository: https://github.com/Scorbutics/ruby-android-ndk-docker
+3. Execute the "build.sh" script of this existing repository, it will build your docker environment required to compile
+
+Old Preparation (DEPRECATED MANUAL VERSION)
 ===
 
 1. Download the Android NDK [here](https://developer.android.com/ndk/downloads). Version r23b (23.1.7779620) is the LTS at the time of this writing, it works well.
@@ -49,7 +61,13 @@ Old notes on Patches
 Compilation
 ====
 
-Start the CMake configuration of the project with `./configure` from the root folder
+Start the CMake configuration of the project:
+
+With docker:
+    `./scripts/configure.sh` from the root folder
+
+Without docker:
+    `./configure` from the root folder
 
 Installation
 ====
@@ -60,7 +78,13 @@ A `target/ruby_full.zip` file will then be generated, holding the executables an
 
 There is no reason to separate the stdlib from the binaries except that the original project was targeted at SL4A that encouraged this separation.
 
-To build the zip files simply run `make` in `ruby-build`.
+To build the zip files simply:
+
+With docker:
+    `./scripts/build.sh` from the root folder
+
+Without docker:
+    run `make` in `ruby-build`.
 
 Usage
 ===
@@ -73,5 +97,5 @@ Limitations
 ===
 
 - I currently do not support Android version < 8 (and I am not sure I will)
-- You need an Unix-based environment to build. Or you could build a container to run the compilation.
+- You need docker, or an Unix-based environment to build.
 - Full ruby output is ~27Mo, that's HUGE on embedded devices. If you're looking for a lightweight ruby implementation, look at [MRuby](https://github.com/mruby/mruby) instead
