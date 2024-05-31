@@ -11,3 +11,18 @@ Index: rubyfull-3.1.1/ruby-build/ruby/build_dir/ruby-3.1.1/configure.ac
  LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(SOEXT)'
  ENABLE_SHARED=no
 
+--- a/ext/fiddle/libffi-3.2.1/libffi.la
++++ b/ext/fiddle/libffi-3.2.1/libffi.la
+@@ -5,10 +5,10 @@
+ # It is necessary for linking the library.
+
+ # The name that we can dlopen(3).
+-dlname='libffi.so.6'
++dlname='libffi.so'
+
+ # Names of this library.
+-library_names='libffi.so.6.0.4 libffi.so.6 libffi.so'
++library_names='libffi.so'
+
+ # The name of the static archive.
+ old_library='libffi.a'
