@@ -1,0 +1,14 @@
+--- a/configure
++++ b/configure
+@@ -6397,9 +6397,9 @@ echo "${ECHO_T}$cf_cv_ldflags_search_pat
+
+ 	test "$cf_cv_shlib_version" = auto && cf_cv_shlib_version=rel
+ 	if test "$cf_cv_shlib_version" = rel; then
+-		cf_cv_shared_soname='`basename $@ .${REL_VERSION}`.${ABI_VERSION}'
++		cf_cv_shared_soname='`basename $@ .${REL_VERSION}`'
+ 	else
+-		cf_cv_shared_soname='`basename $@`'
++		cf_cv_shared_soname='`basename $@ .${REL_VERSION}`'
+ 	fi
+
+ 		MK_SHARED_LIB='${CC} ${LDFLAGS} ${CFLAGS} -shared -Wl,-soname,'$cf_cv_shared_soname',-stats,-lc -o $@'
