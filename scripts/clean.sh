@@ -13,7 +13,7 @@ clear_folder() {
 if [ -z "$TARGETS" ]; then
   rm -f CMakeCache.txt Makefile cmake_install.cmake
   rm -rf CMakeFiles
-  for item in "$ROOT_BUILD_DIR"/*; do
+  for item in $(find "$ROOT_BUILD_DIR"/* -maxdepth 0 -type d -print); do
     clear_folder "$item"
   done
   rm -f $ROOT_BUILD_DIR/cmake_install.cmake $ROOT_BUILD_DIR/Makefile
