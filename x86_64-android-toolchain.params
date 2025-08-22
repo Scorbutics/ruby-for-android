@@ -1,0 +1,1 @@
+-DANDROID_STL=c++_shared -DANDROID_PLATFORM=android-26 -DANDROID_ABI=x86_64 -DHOST=aarch64-linux-android
