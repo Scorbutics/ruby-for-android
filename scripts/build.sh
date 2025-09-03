@@ -1,8 +1,5 @@
 #!/bin/sh
 
-docker run \
-    -v $(pwd):/opt/current \
-    -u $(id -u ${USER}):$(id -g ${USER}) \
-    scor/ruby-android-ndk:latest \
-    /bin/bash \
-    -c 'cmake --build .'
+#!/bin/bash
+DIR="$(cd "$(dirname "$0")" && pwd)"
+"$DIR/docker-dev-action.sh" cmake --build .
