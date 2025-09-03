@@ -15,14 +15,14 @@ string(REGEX REPLACE "CMakeFiles;" "" SUBDIRS "${SUBDIRS}")
 
 FOREACH(subdir ${SUBDIRS})
 	if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/cmake.conf")
-		set(${subdir}_build_dir "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/build_dir")
+		set(${subdir}_build_dir "${CMAKE_BINARY_DIR}/${subdir}/build_dir")
 		file(MAKE_DIRECTORY ${${subdir}_build_dir})
 
 		include(${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/cmake.conf)
 
-		set(${subdir}_downloaded_target ${CMAKE_SOURCE_DIR}/download/${subdir}-${${subdir}_version}*)
+		set(${subdir}_downloaded_target ${CMAKE_BINARY_DIR}/download/${subdir}-${${subdir}_version}*)
 		add_custom_target(${subdir}_download COMMAND /bin/bash -c \"if ! ls ${${subdir}_downloaded_target} &>/dev/null\; then wget ${${subdir}_download_url}\; fi\"
-			WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/download
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/download
 		)
 
 		if(NOT DEFINED ${subdir}_extract_command)
@@ -53,7 +53,7 @@ FOREACH(subdir ${SUBDIRS})
 		)
 
 		if(NOT DEFINED ${subdir}_install_command)
-			set(${subdir}_install_command make install DESTDIR=${CMAKE_SOURCE_DIR}/target)
+			set(${subdir}_install_command make install DESTDIR=${CMAKE_BINARY_DIR}/target)
 		endif()
 		add_custom_target(${subdir}_install COMMAND /bin/bash -c \"[ -f "../.install.done" ] && exit 0 || ${SETUP_COMMAND}\; ${${subdir}_install_command} && touch ../.install.done \"
 			WORKING_DIRECTORY ${${subdir}_build_dir}/${subdir}-${${subdir}_version}
@@ -70,9 +70,9 @@ ENDFOREACH()
 
 add_custom_target(zip ALL
 	COMMAND
-	zip --symlinks -r ruby_full.zip
+	zip -q --symlinks -r ruby_full.zip
 		usr/local/lib/ruby/
 		usr/local/lib/lib*.so*
 		usr/local/bin/irb usr/local/bin/gem usr/local/bin/rake usr/local/bin/ruby usr/local/bin/bundle usr/local/bin/bundler
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/target
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/target
 	DEPENDS ruby)

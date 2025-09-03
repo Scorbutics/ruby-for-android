@@ -4,7 +4,7 @@ services:
     volumes:
       - .:/src:ro # Your editable source code on host
       - currentdata:/opt/current # Named volume for build
-    command: rsync -a --delete /src/ /opt/current/
+    command: rsync -a --delete --exclude "target/" /src/ /opt/current/src/
     # --delete removes files in the named volume that were deleted in src
 
   debug:

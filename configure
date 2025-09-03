@@ -9,7 +9,8 @@ if ! grep -i "Android NDK" "$ANDROID_NDK/README.md"; then
 	echo "Invalid (?) Android NDK folder $ANDROID_NDK : could not locate 'Android NDK' string in $ANDROID_NDK/README.md" && exit 1
 fi
 
-TOOLCHAIN_FILE="${TOOLCHAIN_FILE:-arm64-v8a-android-toolchain.params}"
+SOURCE_DIR="${SOURCE_DIR:-.}"
+TOOLCHAIN_FILE="$SOURCE_DIR/${TOOLCHAIN_FILE:-arm64-v8a-android-toolchain.params}"
 
 echo "Android NDK is located in directory : $ANDROID_NDK. Using toolchain ${TOOLCHAIN_FILE}."
-cmake `cat ${TOOLCHAIN_FILE}` -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake -DTOOLCHAIN_FILE=${TOOLCHAIN_FILE} .
+cmake `cat ${TOOLCHAIN_FILE}` -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake -DTOOLCHAIN_FILE=${TOOLCHAIN_FILE} $SOURCE_DIR
