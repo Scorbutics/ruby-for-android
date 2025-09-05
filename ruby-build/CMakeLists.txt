@@ -62,6 +62,12 @@ FOREACH(subdir ${SUBDIRS})
 
 		add_dependencies(${subdir} ${subdir}_install)
 
+		add_custom_target(${subdir}_clean
+			COMMAND ${CMAKE_COMMAND} -E remove_directory ${${subdir}_build_dir}
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${${subdir}_build_dir}
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		)
+
 		if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/cmake-final.conf")
 			include(${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/cmake-final.conf)
 		endif()

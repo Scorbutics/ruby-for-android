@@ -4,12 +4,7 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Configuration
-PROJECT_NAME="$(basename "$(cd "$DIR/.." && pwd)")"
-CONTAINER="${PROJECT_NAME}_dev"
-IMAGE="scor/ruby-android-ndk:latest"
-VOLUME="${PROJECT_NAME}_currentdata"
-WORKDIR="/opt/current"
-BUILD_DIR="$WORKDIR/build"
+. "$DIR/constants.sh"
 
 function usage() {
   echo "Usage: $0 <command> [args...]"
@@ -34,7 +29,7 @@ else
     # stopped container exists, remove it
     docker rm $CONTAINER
   fi
-  docker run -d --name $CONTAINER -v $VOLUME:$WORKDIR -e "SOURCE_DIR=../src" -w /$BUILD_DIR $IMAGE sleep infinity
+  docker run -d --name $CONTAINER -v $VOLUME:$WORKDIR -e "SOURCE_DIR=$SOURCE_DIR" -w /$BUILD_DIR $IMAGE sleep infinity
 fi
 
 # 3. Execute the requested command inside the build container
