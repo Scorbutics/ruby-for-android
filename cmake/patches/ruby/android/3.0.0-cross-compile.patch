@@ -1,0 +1,149 @@
+--- a/configure
++++ b/configure
+@@ -9109,16 +9109,6 @@ $as_echo_n "checking for Android API ver
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $rb_android_api" >&5
+     colorize_result "$rb_android_api" ; }
+         # RUBY_APPEND_OPTIONS(CPPFLAGS)
+-	for rb_opt in -D__ANDROID_API__=$rb_android_api -Wno-macro-redefined; do
+-	case " ${CPPFLAGS-} " in #(
+-  *" ${rb_opt} "*) :
+-     ;; #(
+-  '  ') :
+-     CPPFLAGS="${rb_opt}" ;; #(
+-  *) :
+-     CPPFLAGS="$CPPFLAGS ${rb_opt}" ;;
+-esac
+-	done
+ 
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+@@ -19879,15 +19869,6 @@ fi
+ 
+ 
+ ac_fn_c_check_type "$LINENO" "size_t" "ac_cv_type_size_t" "$ac_includes_default"
+-if test "x$ac_cv_type_size_t" = xyes; then :
+-
+-else
+-
+-cat >>confdefs.h <<_ACEOF
+-#define size_t unsigned int
+-_ACEOF
+-
+-fi
+ 
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+@@ -19904,11 +19885,6 @@ return test_array [0];
+   return 0;
+ }
+ _ACEOF
+-if ac_fn_c_try_compile "$LINENO"; then :
+-
+-else
+-  as_fn_error $? "size_t is signed" "$LINENO" 5
+-fi
+ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ 
+ if test "$universal_binary" = yes; then
+@@ -21026,7 +21002,7 @@ if ac_fn_c_try_compile "$LINENO"; then :
+ else
+   case 1 in #(
+   "1") :
+-     rb_cv_type_int8_t="signed char" ;; #(
++     rb_cv_type_int8_t="char" ;; #(
+   "$ac_cv_sizeof_short") :
+      rb_cv_type_int8_t="short" ;; #(
+   "$ac_cv_sizeof_int") :
+@@ -21108,10 +21084,6 @@ _ACEOF
+ else
+ 
+ 	cat >>confdefs.h <<_ACEOF
+-#define int8_t $rb_cv_type_int8_t
+-_ACEOF
+-
+-	cat >>confdefs.h <<_ACEOF
+ #define SIZEOF_INT8_T SIZEOF_`$as_echo "$rb_defint_type" | $as_tr_cpp`
+ _ACEOF
+ 
+@@ -21225,10 +21197,6 @@ _ACEOF
+ else
+ 
+ 	cat >>confdefs.h <<_ACEOF
+-#define uint8_t $rb_cv_type_uint8_t
+-_ACEOF
+-
+-	cat >>confdefs.h <<_ACEOF
+ #define SIZEOF_UINT8_T SIZEOF_`$as_echo "$rb_defint_type" | $as_tr_cpp`
+ _ACEOF
+ 
+@@ -22378,9 +22346,6 @@ fi
+ 
+ else
+ 
+-	cat >>confdefs.h <<_ACEOF
+-#define intptr_t $rb_cv_type_intptr_t
+-_ACEOF
+ 
+ 	cat >>confdefs.h <<_ACEOF
+ #define SIZEOF_INTPTR_T SIZEOF_`$as_echo "$rb_defint_type" | $as_tr_cpp`
+@@ -22597,10 +22562,6 @@ fi
+ else
+ 
+ 	cat >>confdefs.h <<_ACEOF
+-#define uintptr_t $rb_cv_type_uintptr_t
+-_ACEOF
+-
+-	cat >>confdefs.h <<_ACEOF
+ #define SIZEOF_UINTPTR_T SIZEOF_`$as_echo "$rb_defint_type" | $as_tr_cpp`
+ _ACEOF
+ 
+@@ -22908,10 +22869,6 @@ fi
+ else
+ 
+ 	cat >>confdefs.h <<_ACEOF
+-#define ssize_t $rb_cv_type_ssize_t
+-_ACEOF
+-
+-	cat >>confdefs.h <<_ACEOF
+ #define SIZEOF_SSIZE_T SIZEOF_`$as_echo "$rb_defint_type" | $as_tr_cpp`
+ _ACEOF
+ 
+@@ -23066,14 +23023,6 @@ rm -f conftest*
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_type_uid_t" >&5
+     colorize_result "$ac_cv_type_uid_t" ; }
+-if test $ac_cv_type_uid_t = no; then
+-
+-$as_echo "#define uid_t int" >>confdefs.h
+-
+-
+-$as_echo "#define gid_t int" >>confdefs.h
+-
+-fi
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking type of array argument to getgroups" >&5
+ $as_echo_n "checking type of array argument to getgroups... " >&6; }
+@@ -23930,15 +23879,6 @@ esac
+ fi
+ 
+ ac_fn_c_check_type "$LINENO" "pid_t" "ac_cv_type_pid_t" "$ac_includes_default"
+-if test "x$ac_cv_type_pid_t" = xyes; then :
+-
+-else
+-
+-cat >>confdefs.h <<_ACEOF
+-#define pid_t int
+-_ACEOF
+-
+-fi
+ 
+ for ac_header in vfork.h
+ do :
+@@ -27429,7 +27369,6 @@ case "$ac_cv_func_gettimeofday:$ac_cv_fu
+      ;; #(
+   *) :
+ 
+-    as_fn_error $? "clock_gettime() or gettimeofday() must exist" "$LINENO" 5
+  ;;
+ esac
+ 

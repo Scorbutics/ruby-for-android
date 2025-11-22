@@ -1,0 +1,32 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -3395,7 +3395,7 @@ AC_ARG_WITH(soname,
+ LIBRUBY_LDSHARED=${DLDSHARED=${LDSHARED}}
+ LIBRUBY_DLDFLAGS=$DLDFLAGS
+ LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_PROGRAM_VERSION)'
+-LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_API_VERSION)'
++LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT)'
+ LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(SOEXT)'
+ ENABLE_SHARED=no
+
+--- a/ext/fiddle/libffi-3.2.1/configure
++++ b/ext/fiddle/libffi-3.2.1/configure
+@@ -11642,7 +11642,7 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu)
+   need_lib_prefix=no
+   need_version=no
+   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
+-  soname_spec='${libname}${release}${shared_ext}$major'
++  soname_spec='${libname}${shared_ext}'
+   finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'
+   shlibpath_var=LD_LIBRARY_PATH
+   shlibpath_overrides_runpath=no
+
+@@ -15477,7 +15477,7 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu)
+   need_lib_prefix=no
+   need_version=no
+   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
+-  soname_spec='${libname}${release}${shared_ext}$major'
++  soname_spec='${libname}${shared_ext}'
+   finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'
+   shlibpath_var=LD_LIBRARY_PATH
+   shlibpath_overrides_runpath=no

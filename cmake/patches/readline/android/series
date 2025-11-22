@@ -1,0 +1,5 @@
+# Patch series for readline on Android
+# Patches are applied in order listed here
+
+# Remove version suffix from SONAME (required for Android linker)
+soname-without-version.patch
