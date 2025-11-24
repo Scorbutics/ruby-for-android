@@ -1,0 +1,1 @@
+-DHOST=x86_64-linux-linux -DHOST_SHORT=linux-x86_64

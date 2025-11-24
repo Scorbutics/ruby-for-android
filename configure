@@ -1,16 +1,45 @@
 #!/bin/sh
-NDK_BASE=/home/$USER/Android/Sdk/ndk
-export ANDROID_NDK=${ANDROID_NDK:-$NDK_BASE/$(ls $NDK_BASE | tail -n 1)}
-if [ ! -d "$ANDROID_NDK" ]; then
-	echo "Unable to find a valid directory in the env variable \$ANDROID_NDK\nPlease ensure your ANDROID_NDK env variable points to a valid location of the NDK" && exit 1
-fi
-
-if ! grep -i "Android NDK" "$ANDROID_NDK/README.md"; then
-	echo "Invalid (?) Android NDK folder $ANDROID_NDK : could not locate 'Android NDK' string in $ANDROID_NDK/README.md" && exit 1
-fi
 
 SOURCE_DIR="${SOURCE_DIR:-.}"
-TOOLCHAIN_FILE="$SOURCE_DIR/${TOOLCHAIN_FILE:-arm64-v8a-android-toolchain.params}"
 
-echo "Android NDK is located in directory : $ANDROID_NDK. Using toolchain ${TOOLCHAIN_FILE}."
-cmake `cat ${TOOLCHAIN_FILE}` -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake -DTOOLCHAIN_FILE=${TOOLCHAIN_FILE} $SOURCE_DIR
+# TOOLCHAIN_PARAMS points to a file containing CMake command-line parameters
+# Default to Android build if no specific toolchain is specified
+TOOLCHAIN_PARAMS="${TOOLCHAIN_PARAMS:-arm64-v8a-android-toolchain.params}"
+TOOLCHAIN_PARAMS_FILE="$SOURCE_DIR/$TOOLCHAIN_PARAMS"
+
+if [ ! -f "$TOOLCHAIN_PARAMS_FILE" ]; then
+	echo "Error: Toolchain parameters file not found: $TOOLCHAIN_PARAMS_FILE"
+	exit 1
+fi
+
+echo "Using toolchain parameters from: $TOOLCHAIN_PARAMS_FILE"
+
+# Check if this is an Android build (legacy ANDROID_ABI support)
+if grep "DANDROID_ABI=" "$TOOLCHAIN_PARAMS_FILE" > /dev/null; then
+	# Android-specific setup
+	NDK_BASE=/home/$USER/Android/Sdk/ndk
+	export ANDROID_NDK=${ANDROID_NDK:-$NDK_BASE/$(ls $NDK_BASE | tail -n 1)}
+	
+	if [ ! -d "$ANDROID_NDK" ]; then
+		echo "Unable to find a valid directory in the env variable \$ANDROID_NDK"
+		echo "Please ensure your ANDROID_NDK env variable points to a valid location of the NDK"
+		exit 1
+	fi
+
+	if ! grep -i "Android NDK" "$ANDROID_NDK/README.md"; then
+		echo "Invalid (?) Android NDK folder $ANDROID_NDK : could not locate 'Android NDK' string in $ANDROID_NDK/README.md"
+		exit 1
+	fi
+
+	echo "Android NDK is located in directory : $ANDROID_NDK"
+	
+	cmake `cat ${TOOLCHAIN_PARAMS_FILE}` \
+		-DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+		-DTOOLCHAIN_PARAMS=${TOOLCHAIN_PARAMS_FILE} \
+		$SOURCE_DIR
+else
+	# Non-Android build (e.g., Linux)
+	cmake `cat ${TOOLCHAIN_PARAMS_FILE}` \
+		-DTOOLCHAIN_PARAMS=${TOOLCHAIN_PARAMS_FILE} \
+		$SOURCE_DIR
+fi

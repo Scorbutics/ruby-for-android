@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 # Configuration
 . "$DIR/constants.sh"
 
-function usage() {
+usage() {
   echo "Usage: $0 <command> [args...]"
   echo "  Example: $0 ./configure"
   echo "           $0 cmake --build ."

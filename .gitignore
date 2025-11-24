@@ -3,7 +3,7 @@ download/
 **/CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-/ruby-build/*/build_dir
+/build
 ruby_full.zip
 rubyroot
 .pc
