@@ -12,9 +12,9 @@ include(Main)
 # APPLICATION DECLARATION - Ruby-specific configuration
 # ============================================================================
 declare_application(
-    APP_NAME "Ruby"
+    APP_NAME "CRuby"
     APP_DIR "${CMAKE_SOURCE_DIR}/cmake/ruby-app"
     APP_DEPENDENCIES "ncurses;readline;gdbm;openssl;ruby"
-    APP_VERSION "3.0.0"
+    APP_VERSION "3.1.1"
     APP_DESCRIPTION "Ruby Programming Language for Cross-Platform Targets"
 )

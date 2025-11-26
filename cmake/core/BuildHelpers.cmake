@@ -80,43 +80,44 @@ function(add_external_dependency)
         set(DEP_INSTALL_COMMAND make install DESTDIR=${BUILD_STAGING_DIR})
     endif()
 
-    # Build patch command using get_platform_patches
-    set(PATCH_CMD "")
-    
-    # Determine base patch directory
-    set(PATCH_BASE_DIR "")
-    if(DEP_PATCH_DIR AND EXISTS "${DEP_PATCH_DIR}/${DEP_NAME}")
-        set(PATCH_BASE_DIR "${DEP_PATCH_DIR}/${DEP_NAME}")
-    elseif(DEFINED APP_DIR AND EXISTS "${APP_DIR}/patches/${DEP_NAME}")
-        set(PATCH_BASE_DIR "${APP_DIR}/patches/${DEP_NAME}")
-    endif()
-    
-    if(PATCH_BASE_DIR)
-        
-        # Get the list of patches to apply
-        get_platform_patches(
-            LIBRARY ${DEP_NAME}
-            VERSION ${DEP_VERSION}
-            PLATFORM ${PLATFORM_LOWER}
-            PATCH_BASE "${PATCH_BASE_DIR}/.."
-            OUTPUT_VAR PATCH_LIST
-        )
-        
-        # Build command list from patches
-        if(PATCH_LIST)
-            set(PATCH_CMD ${CMAKE_COMMAND} -E echo "Applying patches for ${DEP_NAME} ${DEP_VERSION}...")
-            
-            foreach(PATCH_PATH ${PATCH_LIST})
-                get_filename_component(PATCH_FILE "${PATCH_PATH}" NAME)
-                list(APPEND PATCH_CMD COMMAND patch -p1 -i "${PATCH_PATH}")
-                list(APPEND PATCH_CMD COMMAND ${CMAKE_COMMAND} -E echo "  Applied: ${PATCH_FILE}")
-            endforeach()
-        endif()
-    endif()
-
     # Allow override with custom patch command
     if(DEP_PATCH_COMMAND)
         set(PATCH_CMD ${DEP_PATCH_COMMAND})
+    else()
+        # Build patch command using get_platform_patches
+        set(PATCH_CMD "")
+        
+        # Determine base patch directory
+        set(PATCH_BASE_DIR "")
+        if(DEP_PATCH_DIR AND EXISTS "${DEP_PATCH_DIR}/${DEP_NAME}")
+            set(PATCH_BASE_DIR "${DEP_PATCH_DIR}/${DEP_NAME}")
+        elseif(DEFINED APP_DIR AND EXISTS "${APP_DIR}/patches/${DEP_NAME}")
+            set(PATCH_BASE_DIR "${APP_DIR}/patches/${DEP_NAME}")
+        endif()
+
+        if(PATCH_BASE_DIR)
+            
+            # Get the list of patches to apply
+            get_platform_patches(
+                LIBRARY ${DEP_NAME}
+                VERSION ${DEP_VERSION}
+                PLATFORM ${PLATFORM_LOWER}
+                PATCH_BASE "${PATCH_BASE_DIR}/.."
+                OUTPUT_VAR PATCH_LIST
+            )
+
+            # Build command list from patches
+            if(PATCH_LIST)
+                set(PATCH_CMD ${CMAKE_COMMAND} -E echo "Applying patches for ${DEP_NAME} ${DEP_VERSION}...")
+                
+                foreach(PATCH_PATH ${PATCH_LIST})
+                    get_filename_component(PATCH_FILE "${PATCH_PATH}" NAME)
+                    list(APPEND PATCH_CMD COMMAND patch -p1 -i "${PATCH_PATH}")
+                    list(APPEND PATCH_CMD COMMAND ${CMAKE_COMMAND} -E echo "  Applied: ${PATCH_FILE}")
+                endforeach()
+            endif()
+        endif()
+
     endif()
 
     cmake_policy(SET CMP0135 OLD)
