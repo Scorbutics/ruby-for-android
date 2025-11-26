@@ -7,11 +7,13 @@ services:
     command: rsync -a --delete --exclude "target/" /src/ /opt/current/src/
     # --delete removes files in the named volume that were deleted in src
 
-  debug:
-    image: scor/ruby-android-ndk:latest
+  ruby-android-ndk:
+    build:
+      context: docker/
+    container_name: ruby-for-android_dev
     volumes:
       - currentdata:/opt/current
-    working_dir: /opt/current
+    working_dir: /opt/current/
     entrypoint: bash
     tty: true # Allows interactive debugging
     depends_on: 

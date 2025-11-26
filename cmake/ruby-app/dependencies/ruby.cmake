@@ -44,10 +44,16 @@ add_external_dependency(
     DEPENDS openssl_external gdbm_external readline_external
 )
 
+# Set the ruby archive name as a cached variable for easy access
+set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${HOST_SHORT}.zip" CACHE STRING "Ruby full archive filename" FORCE)
+
 create_archive_target(
     NAME ruby_archive
-    OUTPUT ruby_full.zip
+    OUTPUT ${RUBY_FULL_ARCHIVE_NAME}
     INCLUDES usr/local/lib/ruby/  usr/local/lib/lib*.so*  usr/local/bin/irb usr/local/bin/gem usr/local/bin/rake  usr/local/bin/ruby usr/local/bin/bundle usr/local/bin/bundler
     DEPENDS ruby_external
 )
 add_dependencies(ruby ruby_archive)
+
+# Write the archive name to a file for easy retrieval by build scripts
+file(WRITE "${CMAKE_BINARY_DIR}/.ruby_archive_name" "${RUBY_FULL_ARCHIVE_NAME}")

@@ -69,7 +69,7 @@ function(add_external_dependency)
     endif()
 
     set(BUILD_DIR  "${CMAKE_BINARY_DIR}/${DEP_NAME}/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}")
-    set(SOURCE_DIR "${CMAKE_BINARY_DIR}/${DEP_NAME}/build_dir/${DEP_ARCHIVE_NAME}")
+    set(SOURCE_DIR "${CMAKE_BINARY_DIR}/${DEP_NAME}/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}/${DEP_ARCHIVE_NAME}")
 
     # Default build and install commands
     if(NOT DEP_BUILD_COMMAND)
