@@ -104,18 +104,12 @@ else
 	echo "Docker build: disabled (local build)"
 
 	# Check for required tools for local build
-	for tool in cmake make; do
+	for tool in cmake make ruby autoconf; do
 		if ! command -v $tool >/dev/null 2>&1; then
 			echo "Error: Required tool '$tool' not found in PATH"
 			exit 1
 		fi
 	done
-
-	# Ruby 3.0.0+ is needed by the 'make install' step
-	if ! command -v ruby >/dev/null 2>&1; then
-		echo "Warning: Ruby not found in PATH (required for 'make install' step)"
-		echo "Install Ruby 3.0.0+ on the host system"
-	fi
 
 	# Check for Android NDK if this is an Android build
 	if grep -q "DANDROID_ABI=" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
@@ -157,6 +151,8 @@ PROJECT_NAME=ruby-for-android
 CONTAINER=$(PROJECT_NAME)_dev
 DOCKER_WORKDIR=/opt/current
 DOCKER_BUILD_DIR=$(DOCKER_WORKDIR)/build
+
+SHELL=/bin/bash
 
 .PHONY: all build configure-cmake install clean clean-libs clean-downloads clean-artifacts clean-all help docker-init docker-start docker-check-running docker-check-volume docker-sync
 
@@ -278,7 +274,6 @@ build: configure-cmake
 # Install/export from Docker
 install: docker-check-running
 	@echo "Exporting build artifacts from Docker..."
-	@rm -rf target
 	@mkdir -p target
 	@# Get staging directory from CMake cache
 	@BUILD_STAGING_DIR=$$(docker exec $(CONTAINER) grep -E "BUILD_STAGING_DIR:" $(DOCKER_BUILD_DIR)/CMakeCache.txt 2>/dev/null | sed -E 's/.*=(.*)$$/\1/'); \
@@ -347,8 +342,8 @@ configure-cmake:
 	@echo "Configuring with CMake (local mode)..."
 	@mkdir -p $(BUILD_DIR)
 	@cd $(BUILD_DIR) && \
-		export TOOLCHAIN_PARAMS=../$(TOOLCHAIN_PARAMS) && \
-		TOOLCHAIN_PARAMS_FILE="./$(TOOLCHAIN_PARAMS)" && \
+		export SOURCE_DIR=.. && \
+		TOOLCHAIN_PARAMS_FILE="$$SOURCE_DIR/$(TOOLCHAIN_PARAMS)" && \
 		if [ ! -f "$$TOOLCHAIN_PARAMS_FILE" ]; then \
 			echo "Error: Toolchain parameters file not found: $$TOOLCHAIN_PARAMS_FILE"; \
 			exit 1; \
@@ -381,7 +376,6 @@ install:
 		echo "Error: Build directory not found. Run 'make build' first."; \
 		exit 1; \
 	fi
-	@rm -rf target
 	@mkdir -p target
 	@# Get staging directory from CMake cache
 	@BUILD_STAGING_DIR=$$(grep -E "BUILD_STAGING_DIR:" $(BUILD_DIR)/CMakeCache.txt 2>/dev/null | sed -E 's/.*=(.*)$$/\1/'); \
