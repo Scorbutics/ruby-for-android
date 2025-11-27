@@ -109,6 +109,18 @@ function(declare_application)
     # Validate configuration
     include(Validation)
 
+    # Create a top-level build target that depends on all dependency wrapper targets
+    # This ensures that running 'make' builds the wrapper targets (not just the _external targets)
+    # which in turn triggers any post-build steps like archive creation
+    add_custom_target(app_build ALL)
+    foreach(DEP ${ARG_APP_DEPENDENCIES})
+        if(NOT TARGET ${DEP})
+            message(FATAL_ERROR "Dependency wrapper target not found: ${DEP}")
+        endif()
+        add_dependencies(app_build ${DEP})
+    endforeach()
+    message(STATUS "Created app_build target depending on: ${ARG_APP_DEPENDENCIES}")
+
     # Create clean targets
     add_custom_target(clean-libs
         COMMENT "Cleaning all library build directories"

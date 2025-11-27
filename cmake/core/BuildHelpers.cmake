@@ -233,20 +233,27 @@ endfunction()
 #
 # create_archive_target()
 #
-# Creates a target to package the build output
+# Creates a target to package the build output and registers it for export
 #
 # Parameters:
 #   NAME        - Target name
-#   OUTPUT      - Output filename
+#   OUTPUT      - Output filename (relative to BUILD_STAGING_DIR)
 #   INCLUDES    - List of paths to include in archive
 #   DEPENDS     - List of target dependencies
 #   FORMAT      - Archive format (zip, tar.gz, etc.)
+#
+# Side effects:
+#   - Appends OUTPUT to TARGET_ARCHIVES cache variable for install step discovery
 #
 function(create_archive_target)
     set(options "")
     set(oneValueArgs NAME OUTPUT FORMAT)
     set(multiValueArgs INCLUDES DEPENDS)
     cmake_parse_arguments(ARCHIVE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT ARCHIVE_OUTPUT)
+        message(FATAL_ERROR "create_archive_target: OUTPUT parameter is required")
+    endif()
 
     if(NOT ARCHIVE_FORMAT)
         set(ARCHIVE_FORMAT "zip")
@@ -269,6 +276,17 @@ function(create_archive_target)
     else()
         message(FATAL_ERROR "Unsupported archive format: ${ARCHIVE_FORMAT}")
     endif()
+
+    # Register this archive for export by appending to TARGET_ARCHIVES cache variable
+    # Initialize TARGET_ARCHIVES if not already set
+    if(NOT DEFINED TARGET_ARCHIVES)
+        set(TARGET_ARCHIVES "" CACHE STRING "List of archives to export (relative to BUILD_STAGING_DIR)" FORCE)
+    endif()
+
+    # Append this archive to the list
+    set(TARGET_ARCHIVES "${TARGET_ARCHIVES};${ARCHIVE_OUTPUT}" CACHE STRING "List of archives to export (relative to BUILD_STAGING_DIR)" FORCE)
+
+    message(STATUS "Registered archive for export: ${ARCHIVE_OUTPUT}")
 endfunction()
 
 message(STATUS "Generic Build System loaded - NCPUS: ${BUILD_PARALLEL_JOBS}")

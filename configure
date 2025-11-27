@@ -153,9 +153,8 @@ TOOLCHAIN_PARAMS=@TOOLCHAIN_PARAMS@
 PREFIX=@PREFIX@
 BUILD_DIR=@BUILD_DIR@
 ROOT_DIR=@ROOT_DIR@
-PROJECT_NAME=$(shell basename $(ROOT_DIR))
+PROJECT_NAME=ruby-for-android
 CONTAINER=$(PROJECT_NAME)_dev
-DOCKER_IMAGE=scor/ruby-android-ndk:latest
 DOCKER_WORKDIR=/opt/current
 DOCKER_BUILD_DIR=$(DOCKER_WORKDIR)/build
 
@@ -265,11 +264,9 @@ configure-cmake: docker-init
 			echo "Android NDK: $$ANDROID_NDK" && \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DCMAKE_TOOLCHAIN_FILE=$$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-				-DTOOLCHAIN_PARAMS=$$TOOLCHAIN_PARAMS_FILE \
 				$$SOURCE_DIR; \
 		else \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
-				-DTOOLCHAIN_PARAMS=$$TOOLCHAIN_PARAMS_FILE \
 				$$SOURCE_DIR; \
 		fi'
 
@@ -283,19 +280,41 @@ install: docker-check-running
 	@echo "Exporting build artifacts from Docker..."
 	@rm -rf target
 	@mkdir -p target
-	@HOST_SHORT=$$(docker exec $(CONTAINER) grep -oP 'HOST_SHORT:UNINITIALIZED=\K[^$$]+' $(DOCKER_BUILD_DIR)/CMakeCache.txt 2>/dev/null || echo "unknown"); \
-	RUBY_ARCHIVE_NAME="ruby_full-$$HOST_SHORT.zip"; \
-	docker exec $(CONTAINER) tar -czf - -C $(DOCKER_BUILD_DIR)/target . 2>/dev/null | tar -xzf - -C target 2>/dev/null || \
-		(echo "Note: Some symlinks could not be created on Windows (this is normal)" && \
-		docker cp $(CONTAINER):$(DOCKER_BUILD_DIR)/target/$$RUBY_ARCHIVE_NAME target/ 2>/dev/null || true)
-	@echo "Build artifacts exported to: ./target"
-	@HOST_SHORT=$$(docker exec $(CONTAINER) grep -oP 'HOST_SHORT:UNINITIALIZED=\K[^$$]+' $(DOCKER_BUILD_DIR)/CMakeCache.txt 2>/dev/null || echo "unknown"); \
-	RUBY_ARCHIVE_NAME="ruby_full-$$HOST_SHORT.zip"; \
-	if [ -f "target/$$RUBY_ARCHIVE_NAME" ]; then \
-		echo "Ruby archive available at: ./target/$$RUBY_ARCHIVE_NAME"; \
+	@# Get staging directory from CMake cache
+	@BUILD_STAGING_DIR=$$(docker exec $(CONTAINER) grep -E "BUILD_STAGING_DIR:" $(DOCKER_BUILD_DIR)/CMakeCache.txt 2>/dev/null | sed -E 's/.*=(.*)$$/\1/'); \
+	if [ -z "$$BUILD_STAGING_DIR" ]; then \
+		echo "Error: BUILD_STAGING_DIR not found in CMake cache"; \
+		exit 1; \
+	fi; \
+	echo "Staging directory: $$BUILD_STAGING_DIR"; \
+	TARGET_ARCHIVES=$$(docker exec $(CONTAINER) grep -E "TARGET_ARCHIVES:" $(DOCKER_BUILD_DIR)/CMakeCache.txt 2>/dev/null | sed -E 's/.*=(.*)$$/\1/'); \
+	if [ -z "$$TARGET_ARCHIVES" ]; then \
+		echo "Warning: No archives registered in TARGET_ARCHIVES"; \
+		echo "Note: Some symlinks could not be created on Windows (this is normal)"; \
+		docker exec $(CONTAINER) tar -czf - -C $(DOCKER_BUILD_DIR)/target . 2>/dev/null | tar -xzf - -C target 2>/dev/null || true; \
 	else \
-		echo "Warning: $$RUBY_ARCHIVE_NAME not found. Check build output."; \
+		echo "Found registered archives: $$TARGET_ARCHIVES"; \
+		FAILED=0; \
+		IFS=';' read -ra ARCHIVES <<< "$$TARGET_ARCHIVES"; \
+		for archive in "$${ARCHIVES[@]}"; do \
+			if [ -z "$$archive" ]; then continue; fi; \
+			ARCHIVE_PATH="$$BUILD_STAGING_DIR/$$archive"; \
+			echo "Checking archive: $$archive"; \
+			if docker exec $(CONTAINER) test -f "$$ARCHIVE_PATH"; then \
+				echo "  Copying $$archive..."; \
+				docker cp $(CONTAINER):"$$ARCHIVE_PATH" target/ 2>/dev/null || { echo "  Warning: Failed to copy $$archive"; FAILED=1; }; \
+			else \
+				echo "  ERROR: Archive not found: $$ARCHIVE_PATH"; \
+				FAILED=1; \
+			fi; \
+		done; \
+		if [ $$FAILED -eq 1 ]; then \
+			echo "Error: One or more archives are missing or failed to copy"; \
+			exit 1; \
+		fi; \
 	fi
+	@echo "Build artifacts exported to: ./target"
+	@ls -lh target/*.zip 2>/dev/null | awk '{print "  " $$9 " (" $$5 ")"}' || echo "  No archives found"
 
 # Clean targets in Docker
 clean: docker-init
@@ -346,11 +365,9 @@ configure-cmake:
 			echo "Android NDK: $$ANDROID_NDK" && \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DCMAKE_TOOLCHAIN_FILE=$$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-				-DTOOLCHAIN_PARAMS=$$TOOLCHAIN_PARAMS_FILE \
 				..; \
 		else \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
-				-DTOOLCHAIN_PARAMS=$$TOOLCHAIN_PARAMS_FILE \
 				..; \
 		fi
 
@@ -360,20 +377,48 @@ build: configure-cmake
 
 install:
 	@echo "Installing build artifacts (local mode)..."
-	@if [ ! -d "$(BUILD_DIR)/target" ]; then \
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
 		echo "Error: Build directory not found. Run 'make build' first."; \
 		exit 1; \
 	fi
 	@rm -rf target
-	@cp -r $(BUILD_DIR)/target .
-	@echo "Build artifacts installed to: ./target"
-	@HOST_SHORT=$$(grep -oP 'HOST_SHORT:UNINITIALIZED=\K[^$$]+' $(BUILD_DIR)/CMakeCache.txt 2>/dev/null || echo "unknown"); \
-	RUBY_ARCHIVE_NAME="ruby_full-$$HOST_SHORT.zip"; \
-	if [ -f "target/$$RUBY_ARCHIVE_NAME" ]; then \
-		echo "Ruby archive available at: ./target/$$RUBY_ARCHIVE_NAME"; \
+	@mkdir -p target
+	@# Get staging directory from CMake cache
+	@BUILD_STAGING_DIR=$$(grep -E "BUILD_STAGING_DIR:" $(BUILD_DIR)/CMakeCache.txt 2>/dev/null | sed -E 's/.*=(.*)$$/\1/'); \
+	if [ -z "$$BUILD_STAGING_DIR" ]; then \
+		echo "Error: BUILD_STAGING_DIR not found in CMake cache"; \
+		exit 1; \
+	fi; \
+	echo "Staging directory: $$BUILD_STAGING_DIR"; \
+	TARGET_ARCHIVES=$$(grep -E "TARGET_ARCHIVES:" $(BUILD_DIR)/CMakeCache.txt 2>/dev/null | sed -E 's/.*=(.*)$$/\1/'); \
+	if [ -z "$$TARGET_ARCHIVES" ]; then \
+		echo "Warning: No archives registered in TARGET_ARCHIVES"; \
+		if [ -d "$(BUILD_DIR)/target" ]; then \
+			cp -r $(BUILD_DIR)/target/* target/ 2>/dev/null || true; \
+		fi; \
 	else \
-		echo "Warning: $$RUBY_ARCHIVE_NAME not found. Check build output."; \
+		echo "Found registered archives: $$TARGET_ARCHIVES"; \
+		FAILED=0; \
+		IFS=';' read -ra ARCHIVES <<< "$$TARGET_ARCHIVES"; \
+		for archive in "$${ARCHIVES[@]}"; do \
+			if [ -z "$$archive" ]; then continue; fi; \
+			ARCHIVE_PATH="$$BUILD_STAGING_DIR/$$archive"; \
+			echo "Checking archive: $$archive"; \
+			if [ -f "$$ARCHIVE_PATH" ]; then \
+				echo "  Copying $$archive..."; \
+				cp "$$ARCHIVE_PATH" target/ 2>/dev/null || { echo "  Warning: Failed to copy $$archive"; FAILED=1; }; \
+			else \
+				echo "  ERROR: Archive not found: $$ARCHIVE_PATH"; \
+				FAILED=1; \
+			fi; \
+		done; \
+		if [ $$FAILED -eq 1 ]; then \
+			echo "Error: One or more archives are missing or failed to copy"; \
+			exit 1; \
+		fi; \
 	fi
+	@echo "Build artifacts installed to: ./target"
+	@ls -lh target/*.zip 2>/dev/null | awk '{print "  " $$9 " (" $$5 ")"}' || echo "  No archives found"
 
 clean:
 	@echo "Cleaning build artifacts (local mode)..."

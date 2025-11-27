@@ -24,5 +24,5 @@ add_external_dependency(
     URL ${READLINE_URL}
     URL_HASH ${READLINE_HASH}
     CONFIGURE_COMMAND ${READLINE_CONFIGURE_CMD}
-    DEPENDS ncurses_external
+    DEPENDS ncurses
 )

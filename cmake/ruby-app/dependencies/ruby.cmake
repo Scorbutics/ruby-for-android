@@ -41,19 +41,22 @@ add_external_dependency(
     ARCHIVE_NAME "ruby-${RUBY_VERSION}"
     CONFIGURE_COMMAND ${RUBY_CONFIGURE_CMD}
     INSTALL_COMMAND ${RUBY_INSTALL_CMD}
-    DEPENDS openssl_external gdbm_external readline_external
+    DEPENDS openssl gdbm readline
 )
 
-# Set the ruby archive name as a cached variable for easy access
-set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${HOST_SHORT}.zip" CACHE STRING "Ruby full archive filename" FORCE)
+# Construct archive name from platform and architecture
+string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
+set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${PLATFORM_LOWER}-${TARGET_ARCH}.zip")
 
+# Create archive target (automatically registers in TARGET_ARCHIVES)
+# Dependency chain: ruby_external (ExternalProject) → ruby_archive → ruby (alias)
 create_archive_target(
     NAME ruby_archive
     OUTPUT ${RUBY_FULL_ARCHIVE_NAME}
     INCLUDES usr/local/lib/ruby/  usr/local/lib/lib*.so*  usr/local/bin/irb usr/local/bin/gem usr/local/bin/rake  usr/local/bin/ruby usr/local/bin/bundle usr/local/bin/bundler
-    DEPENDS ruby_external
+    DEPENDS ruby_external  # Archive waits for the ExternalProject to complete
 )
-add_dependencies(ruby ruby_archive)
 
-# Write the archive name to a file for easy retrieval by build scripts
-file(WRITE "${CMAKE_BINARY_DIR}/.ruby_archive_name" "${RUBY_FULL_ARCHIVE_NAME}")
+# Make the ruby alias target include the archive
+# So 'make ruby' builds: ruby_external → ruby_archive → ruby
+add_dependencies(ruby ruby_archive)

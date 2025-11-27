@@ -32,8 +32,6 @@ else()
     set(TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-message(STATUS "Target architecture: ${TARGET_ARCH}")
-
 # Android-specific detection
 if(ANDROID)
     if(DEFINED ANDROID_ABI)
@@ -57,6 +55,8 @@ if(ANDROID)
         message(STATUS "Android Host Triplet: ${HOST}")
     endif()
 endif()
+
+message(STATUS "Target architecture: ${TARGET_ARCH}")
 
 # iOS-specific detection
 if(IOS)
