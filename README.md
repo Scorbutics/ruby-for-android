@@ -8,7 +8,7 @@ This project provides a complete cross-compilation environment for Ruby 3.0+ wit
 
 **Supported Platforms:**
 - ✅ **Android** (ARM64, ARMv7, x86_64, x86) - API 26+ (Android 8.0+)
-- 🚧 **Linux** (x86_64, ARM64) - In development
+- ✅ **Linux** (x86_64, ARM64)
 - 🚧 **macOS** - Planned
 - 🚧 **iOS** - Planned
 
@@ -183,6 +183,10 @@ ANDROID_PLATFORM=android-26
 ANDROID_NDK=/path/to/android-ndk
 ```
 
+**Linux x86_64** (`x86_64-linux-toolchain.params`):
+
+This is voluntarly left empty, as nothing special is needed for Linux builds.
+
 ## 📦 Build Targets
 
 ### Using Make (Standard)
@@ -293,13 +297,14 @@ Platform modules (`cmake/core/platforms/*.cmake`) must set:
 
 ### Deploying
 
-1. Extract `build/target/ruby_full.zip` to your Android device (e.g., `/data/local/tmp/ruby`)
+1. Extract `build/target/ruby_full-{platform}-{arch}.zip` to your Android device (e.g., `/data/local/tmp/ruby`)
 
 2. Set up environment using the provided script:
 
 ```bash
 # On Android device
-source /path/to/ruby/setup_ruby.sh
+# Arguments: <root_path> <ruby_version> <architecture>
+source /data/local/tmp/ruby/setup_ruby.sh /data/local/tmp/ruby 3.1.0 aarch64
 ```
 
 3. Run Ruby:
