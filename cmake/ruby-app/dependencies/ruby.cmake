@@ -13,6 +13,8 @@ set(RUBY_CONFIGURE_CMD
     --target=${HOST_TRIPLET}
 )
 
+option(RUBY_ENABLE_SHARED "Build Ruby as shared lib" ON)
+
 # Add shared library option if enabled
 if(RUBY_ENABLE_SHARED)
     list(APPEND RUBY_CONFIGURE_CMD --enable-shared)
@@ -53,7 +55,7 @@ set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${PLATFORM_LOWER}-${TARGET_ARCH}.zip")
 create_archive_target(
     NAME ruby_archive
     OUTPUT ${RUBY_FULL_ARCHIVE_NAME}
-    INCLUDES usr/local/lib/ruby/  usr/local/lib/lib*.so*  usr/local/bin/irb usr/local/bin/gem usr/local/bin/rake  usr/local/bin/ruby usr/local/bin/bundle usr/local/bin/bundler
+    INCLUDES usr/local/lib/ruby/ usr/local/lib/lib*.so* usr/local/include/ruby-*
     DEPENDS ruby_external  # Archive waits for the ExternalProject to complete
 )
 
