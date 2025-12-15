@@ -18,6 +18,8 @@ if(RUBY_ENABLE_SHARED)
     list(APPEND RUBY_CONFIGURE_CMD --enable-shared)
 else()
     list(APPEND RUBY_CONFIGURE_CMD --disable-shared --enable-static)
+    # Static-link extensions into libruby.a when building static
+    list(APPEND RUBY_CONFIGURE_CMD --with-static-linked-ext)
 endif()
 
 # Disable documentation if requested

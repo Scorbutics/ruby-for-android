@@ -5,7 +5,9 @@
       "Bash(export MSYS_NO_PATHCONV=1)",
       "Bash(docker exec:*)",
       "Bash(export PATH=\"/c/msys64/usr/bin:$PATH\")",
-      "Bash(make configure-cmake:*)"
+      "Bash(make configure-cmake:*)",
+      "Bash(ruby --help:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
