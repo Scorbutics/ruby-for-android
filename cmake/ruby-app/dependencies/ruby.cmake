@@ -19,7 +19,7 @@ if(RUBY_ENABLE_SHARED)
 else()
     list(APPEND RUBY_CONFIGURE_CMD --disable-shared --enable-static)
     # Static-link extensions into libruby.a when building static
-    list(APPEND RUBY_CONFIGURE_CMD --with-static-linked-ext)
+    list(APPEND RUBY_CONFIGURE_CMD --with-static-linked-ext --disable-dln) # Disable dynamic loading
 endif()
 
 # Disable documentation if requested
