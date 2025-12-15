@@ -1,0 +1,10 @@
+--- a/Configurations/15-android.conf
++++ b/Configurations/15-android.conf
+@@ -190,6 +190,7 @@ my %targets = (
+         bn_ops           => sub { android_ndk()->{bn_ops} },
+         bin_cflags       => "-pie",
+         enable           => [ ],
++        shared_extension => ".so",
+     },
+     "android-arm" => {
+         ################################################################

@@ -1,0 +1,6 @@
+# Patch series for GDBM on Linux
+# Patches are applied in order listed here
+
+# gcc-10 will change the default from -fcommon to fno-common
+# The fix is to avoid multiple definition and rely on declarations only.
+gdbm-fix-link-failure-against-gcc-10.patch

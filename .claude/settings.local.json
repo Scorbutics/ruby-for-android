@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(MSYS_NO_PATHCONV=1 docker exec:*)",
+      "Bash(export MSYS_NO_PATHCONV=1)",
+      "Bash(docker exec:*)",
+      "Bash(export PATH=\"/c/msys64/usr/bin:$PATH\")",
+      "Bash(make configure-cmake:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

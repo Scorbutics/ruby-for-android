@@ -1,0 +1,11 @@
+target/
+download/
+**/CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+/build
+ruby_full-*.zip
+rubyroot
+.pc
+Makefile
+/.claude
