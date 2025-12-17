@@ -8,7 +8,7 @@ set(READLINE_HASH "SHA256=f8ceb4ee131e3232226a17f51b164afc46cd0b9e6cef344be87c65
 
 # Configure command (autoconf-based)
 # Note: readline needs autoconf to be run first
-if(ENABLE_SHARED)
+if(BUILD_SHARED_LIBS)
     set(READLINE_CONFIGURE_LIB_TYPE
         --enable-shared
     )

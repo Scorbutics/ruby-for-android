@@ -78,6 +78,7 @@ set(BUILD_ENV
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
     MACOSX_DEPLOYMENT_TARGET=${MACOS_MIN_VERSION}
+    DYLD_LIBRARY_PATH=${BUILD_STAGING_DIR}/usr/lib:${BUILD_STAGING_DIR}/usr/local/lib
 )
 
 # Export for use in dependency builds
@@ -86,8 +87,14 @@ set(HOST_TRIPLET "${MACOS_HOST_TRIPLET}" PARENT_SCOPE)
 set(HOST_SHORT "macos-${TARGET_ARCH}" PARENT_SCOPE)
 
 # Platform-specific build options
-set(ENABLE_SHARED ON CACHE BOOL "Build shared libraries")
 set(DISABLE_INSTALL_DOC ON CACHE BOOL "Disable documentation installation")
+
+# Report build mode
+if(BUILD_SHARED_LIBS)
+    message(STATUS "macOS: Using DYNAMIC libraries (BUILD_SHARED_LIBS=ON)")
+else()
+    message(STATUS "macOS: Using STATIC libraries (BUILD_SHARED_LIBS=OFF)")
+endif()
 
 # Mark platform as initialized
 set(PLATFORM_INITIALIZED TRUE PARENT_SCOPE)

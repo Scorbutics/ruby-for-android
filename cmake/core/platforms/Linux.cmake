@@ -48,16 +48,27 @@ set(BUILD_ENV
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
+    LD_LIBRARY_PATH=${BUILD_STAGING_DIR}/usr/lib:${BUILD_STAGING_DIR}/usr/local/lib
 )
 
 # Export for use in dependency builds
 set(BUILD_ENV ${BUILD_ENV} PARENT_SCOPE)
 set(HOST_TRIPLET "${LINUX_HOST_TRIPLET}" PARENT_SCOPE)
 set(HOST_SHORT "linux-${TARGET_ARCH}" PARENT_SCOPE)
+set(CFLAGS "${CFLAGS}" PARENT_SCOPE)
+set(CXXFLAGS "${CXXFLAGS}" PARENT_SCOPE)
+set(CPPFLAGS "${CPPFLAGS}" PARENT_SCOPE)
+set(LDFLAGS "${LDFLAGS}" PARENT_SCOPE)
 
 # Platform-specific build options
-set(ENABLE_SHARED ON CACHE BOOL "Build shared libraries")
 set(DISABLE_INSTALL_DOC ON CACHE BOOL "Disable documentation installation")
+
+# Report build mode
+if(BUILD_SHARED_LIBS)
+    message(STATUS "Linux: Using DYNAMIC libraries (BUILD_SHARED_LIBS=ON)")
+else()
+    message(STATUS "Linux: Using STATIC libraries (BUILD_SHARED_LIBS=OFF)")
+endif()
 
 # Mark platform as initialized
 set(PLATFORM_INITIALIZED TRUE PARENT_SCOPE)

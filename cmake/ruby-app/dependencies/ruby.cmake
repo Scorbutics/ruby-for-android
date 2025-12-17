@@ -13,14 +13,21 @@ set(RUBY_CONFIGURE_CMD
     --target=${HOST_TRIPLET}
 )
 
-# Add shared library option if enabled
-if(RUBY_ENABLE_SHARED)
+# Use BUILD_SHARED_LIBS to control Ruby build mode
+if(BUILD_SHARED_LIBS)
     list(APPEND RUBY_CONFIGURE_CMD --enable-shared)
+    message(STATUS "Ruby: Building as SHARED library (libruby.so)")
 else()
-    list(APPEND RUBY_CONFIGURE_CMD --disable-shared --enable-static)
-    # Static-link extensions into libruby.a when building static
-    list(APPEND RUBY_CONFIGURE_CMD --with-static-linked-ext --disable-dln) # Disable dynamic loading
+    # Build Ruby as static library with static extension support
+    list(APPEND RUBY_CONFIGURE_CMD
+        --disable-shared
+        --enable-static
+        --with-static-linked-ext
+        --disable-dln
+    )
+    message(STATUS "Ruby: Building as STATIC library (libruby-static.a)")
 endif()
+
 
 # Disable documentation if requested
 if(RUBY_DISABLE_INSTALL_DOC)
@@ -43,15 +50,15 @@ add_external_dependency(
     ARCHIVE_NAME "ruby-${RUBY_VERSION}"
     CONFIGURE_COMMAND ${RUBY_CONFIGURE_CMD}
     INSTALL_COMMAND ${RUBY_INSTALL_CMD}
-    DEPENDS openssl gdbm readline
+    DEPENDS zlib openssl gdbm readline
 )
 
 # Construct archive name from platform and architecture
 string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
 set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${PLATFORM_LOWER}-${TARGET_ARCH}.zip")
 
-# Determine archive contents based on ENABLE_SHARED
-if(ENABLE_SHARED)
+# Determine archive contents based on BUILD_SHARED_LIBS
+if(BUILD_SHARED_LIBS)
     # Shared library build: include .so files
     set(RUBY_LIB_EXTENSION "so")
 else()

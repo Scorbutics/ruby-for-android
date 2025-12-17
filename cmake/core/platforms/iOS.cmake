@@ -129,11 +129,12 @@ set(HOST_TRIPLET "${IOS_HOST_TRIPLET}" PARENT_SCOPE)
 set(HOST_SHORT "ios-${IOS_ARCH}" PARENT_SCOPE)
 
 # Platform-specific build options
-set(ENABLE_SHARED OFF CACHE BOOL "Build static libraries for iOS")
+# iOS ALWAYS requires static linking for App Store apps - override user setting
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries for iOS" FORCE)
 set(DISABLE_INSTALL_DOC ON CACHE BOOL "Disable documentation installation")
 
 # Note: iOS requires static linking for App Store apps
-message(STATUS "iOS builds will use static libraries (required for App Store)")
+message(STATUS "iOS builds will use STATIC libraries (required for App Store - cannot be changed)")
 
 # Mark platform as initialized
 set(PLATFORM_INITIALIZED TRUE PARENT_SCOPE)

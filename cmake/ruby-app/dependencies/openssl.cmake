@@ -5,11 +5,14 @@ set(OPENSSL_VERSION "1.1.1m")
 set(OPENSSL_URL "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz")
 set(OPENSSL_HASH "SHA256=f89199be8b23ca45fc7cb9f1d8d3ee67312318286ad030f5316aca6462db6c96")
 
-# Determine shared/static flag based on ENABLE_SHARED
-if(ENABLE_SHARED)
+# Determine shared/static flag based on BUILD_SHARED_LIBS
+if(BUILD_SHARED_LIBS)
     set(OPENSSL_SHARED_FLAG "shared")
+    set(OPENSSL_TEST_FLAG "")
 else()
     set(OPENSSL_SHARED_FLAG "no-shared")
+    # Disable tests for static builds - tests link against internal symbols not exported in static libs
+    set(OPENSSL_TEST_FLAG "no-tests")
 endif()
 
 # Platform-specific configure command
@@ -18,7 +21,7 @@ if(TARGET_PLATFORM STREQUAL "Android")
     # OpenSSL needs ANDROID_NDK_ROOT and PATH to include toolchain bin
     # The Configure script will automatically detect and use the appropriate clang
     set(OPENSSL_CONFIGURE_CMD
-        ./Configure ${HOST_SHORT} ${OPENSSL_SHARED_FLAG}
+        ./Configure ${HOST_SHORT} ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
             --prefix=/usr/local
             -D__ANDROID_API__=${ANDROID_API_LEVEL}
     )
@@ -27,28 +30,28 @@ elseif(TARGET_PLATFORM STREQUAL "iOS")
     # iOS needs special configuration
     if(RUBY_IOS_PLATFORM STREQUAL "device")
         set(OPENSSL_CONFIGURE_CMD
-            ./Configure ios64-xcrun ${OPENSSL_SHARED_FLAG}
+            ./Configure ios64-xcrun ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
         )
     else()
         set(OPENSSL_CONFIGURE_CMD
-            ./Configure iossimulator-xcrun ${OPENSSL_SHARED_FLAG}
+            ./Configure iossimulator-xcrun ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
         )
     endif()
 elseif(TARGET_PLATFORM STREQUAL "macOS")
     # macOS configuration
     if(RUBY_TARGET_ARCH STREQUAL "arm64")
         set(OPENSSL_CONFIGURE_CMD
-            ./Configure darwin64-arm64-cc ${OPENSSL_SHARED_FLAG}
+            ./Configure darwin64-arm64-cc ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
         )
     else()
         set(OPENSSL_CONFIGURE_CMD
-            ./Configure darwin64-x86_64-cc ${OPENSSL_SHARED_FLAG}
+            ./Configure darwin64-x86_64-cc ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
         )
     endif()
 else()
     # Linux and other platforms
     set(OPENSSL_CONFIGURE_CMD
-        ./config ${OPENSSL_SHARED_FLAG}
+        ./config ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
     )
 endif()
 

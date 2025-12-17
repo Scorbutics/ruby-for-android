@@ -7,7 +7,7 @@ set(GDBM_URL "https://ftp.gnu.org/gnu/gdbm/gdbm-${GDBM_VERSION}.tar.gz")
 set(GDBM_HASH "SHA256=86e613527e5dba544e73208f42b78b7c022d4fa5a6d5498bf18c8d6f745b91dc")
 
 # Configure command (autoconf-based)
-if(ENABLE_SHARED)
+if(BUILD_SHARED_LIBS)
     set(GDBM_CONFIGURE_LIB_TYPE
         --enable-shared
         --disable-static

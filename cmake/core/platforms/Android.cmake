@@ -121,6 +121,7 @@ set(BUILD_ENV
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
+    LD_LIBRARY_PATH=${BUILD_STAGING_DIR}/usr/lib:${BUILD_STAGING_DIR}/usr/local/lib
 )
 
 # Export for use in dependency builds
@@ -135,7 +136,13 @@ set(ANDROID_TOOLCHAIN_BIN "${TOOLCHAIN_BIN}" PARENT_SCOPE)
 set(ANDROID_API_LEVEL "${ANDROID_API_LEVEL}" PARENT_SCOPE)
 
 # Platform-specific build options
-set(ENABLE_SHARED ON CACHE BOOL "Build shared libraries")
+# Note: BUILD_SHARED_LIBS is already set by CMakeLists.txt
+# We just report the status here
+if(BUILD_SHARED_LIBS)
+    message(STATUS "Android: Using DYNAMIC libraries (BUILD_SHARED_LIBS=ON)")
+else()
+    message(STATUS "Android: Using STATIC libraries (BUILD_SHARED_LIBS=OFF)")
+endif()
 set(DISABLE_INSTALL_DOC ON CACHE BOOL "Disable documentation installation")
 
 # Mark platform as initialized

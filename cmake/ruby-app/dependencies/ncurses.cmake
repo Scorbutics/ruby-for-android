@@ -11,7 +11,7 @@ set(NCURSES_HASH "SHA256=6931283d9ac87c5073f30b6290c4c75f21632bb4fc3603ac8100812
 # - BUILD tools (native, to generate terminfo): --with-build-cc
 # - TARGET libraries (cross-compiled): CC from environment
 
-if(ENABLE_SHARED)
+if(BUILD_SHARED_LIBS)
     set(NCURSES_CONFIGURE_LIB_TYPE
         --with-shared
     )
