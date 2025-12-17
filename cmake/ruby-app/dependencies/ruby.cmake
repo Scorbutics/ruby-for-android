@@ -7,10 +7,16 @@ set(RUBY_URL "http://ftp.ruby-lang.org/pub/ruby/${RUBY_MAJOR_VERSION}/ruby-${RUB
 set(RUBY_HASH "SHA256=7aefaa6b78b076515d272ec59c4616707a54fc9f2391239737d5f10af7a16caa")
 
 # Configure command (autoconf-based)
+# --with-opt-dir: Tell Ruby where to find external libraries (zlib, openssl, readline, gdbm)
+#                 This adds the staging directory to both include and library search paths
+# Note: We don't use --with-ext because it's EXCLUSIVE (only builds specified extensions)
+#       Instead, we let Ruby build all default extensions, and the build will fail naturally
+#       if required external dependencies (zlib, openssl, readline, gdbm) are missing
 set(RUBY_CONFIGURE_CMD
     ./configure
     --host=${HOST_TRIPLET}
     --target=${HOST_TRIPLET}
+    --with-opt-dir=${BUILD_STAGING_DIR}/usr
 )
 
 # Use BUILD_SHARED_LIBS to control Ruby build mode
@@ -38,8 +44,19 @@ if(NOT BUILD_STAGING_DIR)
     message(FATAL_ERROR "Ruby: BUILD_STAGING_DIR is required for the install")
 endif()
 
-# Custom install command to skip docs
-set(RUBY_INSTALL_CMD make install-nodoc DESTDIR=${BUILD_STAGING_DIR})
+# Verification script to check for missing critical extensions
+set(VERIFY_EXTENSIONS_SCRIPT "${APP_DIR}/scripts/verify_ruby_extensions.sh")
+
+string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
+set(RUBY_BUILD_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}" CACHE PATH "Staging directory for installation")
+
+# Custom install command with validation
+# 1. Run make install-nodoc
+# 2. Verify critical extensions were built by checking the build log
+set(RUBY_INSTALL_CMD
+    make install-nodoc DESTDIR=${BUILD_STAGING_DIR}
+    COMMAND sh ${VERIFY_EXTENSIONS_SCRIPT} ${RUBY_BUILD_DIR}/stamps/ruby_external-build-out.log
+)
 
 # Build Ruby (depends on all other libraries)
 add_external_dependency(
@@ -67,6 +84,7 @@ else()
 endif()
 
 set(RUBY_ARCHIVE_INCLUDES
+    usr/lib/lib*.${RUBY_LIB_EXTENSION}
     usr/local/include/ruby-*/
     usr/local/lib/ruby/
     usr/local/lib/lib*.${RUBY_LIB_EXTENSION}
