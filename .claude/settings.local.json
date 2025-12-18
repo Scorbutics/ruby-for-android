@@ -10,7 +10,9 @@
       "WebSearch",
       "Bash(nm:*)",
       "Bash(curl:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

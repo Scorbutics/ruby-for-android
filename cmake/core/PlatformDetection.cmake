@@ -2,6 +2,18 @@
 # Generic platform detection and configuration loading
 # This module is application-agnostic and can be reused across projects
 
+# Convert ENABLE_SHARED from configure script to BUILD_SHARED_LIBS
+if(DEFINED ENABLE_SHARED)
+    if(ENABLE_SHARED)
+        set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
+    else()
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries")
+    endif()
+else()
+    # Default to shared if not specified
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
+endif()
+
 # Determine target platform
 if(ANDROID)
     set(TARGET_PLATFORM "Android")

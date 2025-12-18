@@ -70,6 +70,26 @@ add_external_dependency(
     DEPENDS zlib openssl gdbm readline
 )
 
+# For static builds, create a combined extensions library (libruby-ext.a)
+if(NOT BUILD_SHARED_LIBS)
+    set(RUBY_EXT_LIB "${BUILD_STAGING_DIR}/usr/local/lib/libruby-ext.a")
+
+    add_custom_target(ruby_combine_extensions
+        COMMAND ${CMAKE_COMMAND} -E echo "Creating combined extensions library: libruby-ext.a"
+        COMMAND ${CMAKE_COMMAND}
+            -DRUBY_BUILD_DIR=${RUBY_BUILD_DIR}
+            -DRUBY_VERSION=${RUBY_VERSION}
+            -DOUTPUT_LIB=${RUBY_EXT_LIB}
+            -DCROSS_AR=${CROSS_AR}
+            -P ${CMAKE_CURRENT_LIST_DIR}/../scripts/combine_ruby_extensions.cmake
+        DEPENDS ruby_external
+        COMMENT "Combining Ruby extension .a files into libruby-ext.a"
+    )
+
+    # Make ruby depend on the combined extensions library
+    add_dependencies(ruby ruby_combine_extensions)
+endif()
+
 # Construct archive name from platform and architecture
 string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
 set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${PLATFORM_LOWER}-${TARGET_ARCH}.zip")
@@ -102,7 +122,7 @@ create_archive_target(
     NAME ruby_archive
     OUTPUT ${RUBY_FULL_ARCHIVE_NAME}
     INCLUDES ${RUBY_ARCHIVE_INCLUDES}
-    DEPENDS ruby_external  # Archive waits for the ExternalProject to complete
+    DEPENDS ruby_combine_extensions  # Archive waits for the ExternalProject to complete and the combining of extensions
 )
 
 # Make the ruby alias target include the archive
