@@ -94,6 +94,11 @@ set(CFLAGS "${CFLAGS} -I${BUILD_STAGING_DIR}/usr/local/include")
 set(CFLAGS "${CFLAGS} -O3 -DNDEBUG")
 set(CFLAGS "${CFLAGS} -U__ANDROID_API__ -D__ANDROID_API__=${ANDROID_API_LEVEL}")
 
+# Add -fPIC for static builds (required for linking static libraries into executables)
+if(NOT BUILD_SHARED_LIBS)
+    set(CFLAGS "${CFLAGS} -fPIC")
+endif()
+
 set(CXXFLAGS "${CFLAGS}")
 set(CPPFLAGS "${CFLAGS}")
 

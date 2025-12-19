@@ -19,6 +19,7 @@ else()
     set(NCURSES_CONFIGURE_LIB_TYPE
         --without-shared
         --enable-static
+        --with-pic
     )
 endif()
 

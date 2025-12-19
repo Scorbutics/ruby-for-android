@@ -30,8 +30,9 @@ else()
         --enable-static
         --with-static-linked-ext
         --disable-dln
+        --with-pic
     )
-    message(STATUS "Ruby: Building as STATIC library (libruby-static.a)")
+    message(STATUS "Ruby: Building as STATIC library (libruby-static.a) with PIC")
 endif()
 
 

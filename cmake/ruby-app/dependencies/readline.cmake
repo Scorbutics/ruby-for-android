@@ -16,6 +16,7 @@ else()
     set(READLINE_CONFIGURE_LIB_TYPE
         --disable-shared
         --enable-static
+        --with-pic
     )
 endif()
 

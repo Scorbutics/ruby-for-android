@@ -58,6 +58,11 @@ if(CMAKE_OSX_ARCHITECTURES)
     endforeach()
 endif()
 
+# Add -fPIC for static builds (required for linking static libraries into executables)
+if(NOT BUILD_SHARED_LIBS)
+    set(CFLAGS "${CFLAGS} -fPIC")
+endif()
+
 set(CXXFLAGS "${CFLAGS}")
 set(CPPFLAGS "${CFLAGS}")
 

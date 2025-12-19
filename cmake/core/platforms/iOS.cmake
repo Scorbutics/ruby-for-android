@@ -99,6 +99,11 @@ if(IOS_PLATFORM_TYPE STREQUAL "simulator")
     set(CFLAGS "${CFLAGS} -D__IPHONE_SIMULATOR__")
 endif()
 
+# Add -fPIC for static builds (required for linking static libraries into executables)
+if(NOT BUILD_SHARED_LIBS)
+    set(CFLAGS "${CFLAGS} -fPIC")
+endif()
+
 set(CXXFLAGS "${CFLAGS}")
 set(CPPFLAGS "${CFLAGS}")
 

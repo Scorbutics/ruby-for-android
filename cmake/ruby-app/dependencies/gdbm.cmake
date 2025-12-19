@@ -16,6 +16,7 @@ else()
     set(GDBM_CONFIGURE_LIB_TYPE
         --disable-shared
         --enable-static
+        --with-pic
     )
 endif()
 
@@ -31,7 +32,8 @@ set(GDBM_CONFIGURE_CMD
 set(GDBM_ENV_VARS "")
 if(TARGET_PLATFORM STREQUAL "Android")
     # Android needs -fcommon flag for compatibility
-    set(GDBM_CFLAGS "${CFLAGS} -fcommon -fPIC")
+    # Note: -fPIC is now automatically added by platform config for static builds
+    set(GDBM_CFLAGS "${CFLAGS} -fcommon")
     set(GDBM_ENV_VARS "CFLAGS=${GDBM_CFLAGS}")
 endif()
 
