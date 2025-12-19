@@ -14,7 +14,7 @@ include(Main)
 declare_application(
     APP_NAME "CRuby"
     APP_DIR "${CMAKE_SOURCE_DIR}/cmake/ruby-app"
-    APP_DEPENDENCIES "zlib;ncurses;readline;gdbm;openssl;ruby"
+    APP_DEPENDENCIES "zlib;gmp;libmd;libbsd;libxcrypt;ncurses;readline;gdbm;openssl;ruby"
     APP_VERSION "3.1.1"
     APP_DESCRIPTION "Ruby Programming Language for Cross-Platform Targets"
 )

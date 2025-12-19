@@ -61,6 +61,15 @@ set(RUBY_INSTALL_CMD
 )
 
 # Build Ruby (depends on all other libraries)
+# Static dependencies: zlib, gmp, libxcrypt (Linux only)
+# Shared dependencies from system: openssl, gdbm, readline, ncurses
+set(RUBY_DEPENDENCIES zlib gmp openssl gdbm readline)
+
+# Add libxcrypt for Linux builds only (Android's Bionic doesn't provide crypt)
+if(TARGET_PLATFORM STREQUAL "Linux")
+    list(APPEND RUBY_DEPENDENCIES libxcrypt)
+endif()
+
 add_external_dependency(
     NAME ruby
     VERSION ${RUBY_VERSION}
@@ -69,7 +78,7 @@ add_external_dependency(
     ARCHIVE_NAME "ruby-${RUBY_VERSION}"
     CONFIGURE_COMMAND ${RUBY_CONFIGURE_CMD}
     INSTALL_COMMAND ${RUBY_INSTALL_CMD}
-    DEPENDS zlib openssl gdbm readline
+    DEPENDS ${RUBY_DEPENDENCIES}
 )
 
 # For static builds, create a combined extensions library (libruby-ext.a)
