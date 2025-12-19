@@ -3,6 +3,7 @@
 
 set(RUBY_MAJOR_VERSION "3.1")
 set(RUBY_VERSION "3.1.1")
+set(RUBY_ABI_VERSION "3.1.0")  # Ruby ABI version used in include/lib paths
 set(RUBY_URL "http://ftp.ruby-lang.org/pub/ruby/${RUBY_MAJOR_VERSION}/ruby-${RUBY_VERSION}.tar.xz")
 set(RUBY_HASH "SHA256=7aefaa6b78b076515d272ec59c4616707a54fc9f2391239737d5f10af7a16caa")
 
@@ -95,36 +96,40 @@ endif()
 string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
 set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${PLATFORM_LOWER}-${TARGET_ARCH}.zip")
 
-# Determine archive contents based on BUILD_SHARED_LIBS
+# Create custom archive target using our restructuring script
+# This replaces the simple create_archive_target() with a custom command
+# that reorganizes the directory structure according to project requirements
+
+# Set the output path for the archive
+set(RUBY_ARCHIVE_OUTPUT "${BUILD_STAGING_DIR}/${RUBY_FULL_ARCHIVE_NAME}")
+
+# Determine dependencies based on build type
 if(BUILD_SHARED_LIBS)
-    # Shared library build: include .so files
-    set(RUBY_LIB_EXTENSION "so")
+    set(RUBY_ARCHIVE_DEPS ruby_external)
 else()
-    # Static library build: include .a files
-    set(RUBY_LIB_EXTENSION "a")
+    set(RUBY_ARCHIVE_DEPS ruby_combine_extensions)
 endif()
 
-set(RUBY_ARCHIVE_INCLUDES
-    usr/lib/lib*.${RUBY_LIB_EXTENSION}
-    usr/local/include/ruby-*/
-    usr/local/lib/ruby/
-    usr/local/lib/lib*.${RUBY_LIB_EXTENSION}
-    usr/local/bin/irb
-    usr/local/bin/gem
-    usr/local/bin/rake
-    usr/local/bin/ruby
-    usr/local/bin/bundle
-    usr/local/bin/bundler
+add_custom_target(ruby_archive
+    COMMAND ${CMAKE_COMMAND}
+        -DBUILD_STAGING_DIR=${BUILD_STAGING_DIR}
+        -DHOST_TRIPLET=${HOST_TRIPLET}
+        -DPLATFORM_LOWER=${PLATFORM_LOWER}
+        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+        -DARCHIVE_OUTPUT=${RUBY_ARCHIVE_OUTPUT}
+        -DRUBY_VERSION=${RUBY_VERSION}
+        -DRUBY_ABI_VERSION=${RUBY_ABI_VERSION}
+        -P ${CMAKE_CURRENT_LIST_DIR}/../scripts/create_ruby_archive.cmake
+    DEPENDS ${RUBY_ARCHIVE_DEPS}
+    COMMENT "Creating restructured Ruby archive: ${RUBY_FULL_ARCHIVE_NAME}"
 )
 
-# Create archive target (automatically registers in TARGET_ARCHIVES)
-# Dependency chain: ruby_external (ExternalProject) → ruby_archive → ruby (alias)
-create_archive_target(
-    NAME ruby_archive
-    OUTPUT ${RUBY_FULL_ARCHIVE_NAME}
-    INCLUDES ${RUBY_ARCHIVE_INCLUDES}
-    DEPENDS ruby_combine_extensions  # Archive waits for the ExternalProject to complete and the combining of extensions
-)
+# Register this archive for export
+if(NOT DEFINED TARGET_ARCHIVES)
+    set(TARGET_ARCHIVES "" CACHE STRING "List of archives to export (relative to BUILD_STAGING_DIR)" FORCE)
+endif()
+set(TARGET_ARCHIVES "${TARGET_ARCHIVES};${RUBY_FULL_ARCHIVE_NAME}" CACHE STRING "List of archives to export (relative to BUILD_STAGING_DIR)" FORCE)
+message(STATUS "Registered archive for export: ${RUBY_FULL_ARCHIVE_NAME}")
 
 # Make the ruby alias target include the archive
 # So 'make ruby' builds: ruby_external → ruby_archive → ruby
