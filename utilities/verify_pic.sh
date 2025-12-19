@@ -60,7 +60,7 @@ check_library() {
     local no_reloc_count=0
     local absolute_reloc_count=0
     local checked=0
-    local max_check=10
+    local max_check=50
 
     echo ""
     echo "Detailed Analysis (checking first $max_check objects):"
