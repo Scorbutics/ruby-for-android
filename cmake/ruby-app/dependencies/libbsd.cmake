@@ -22,11 +22,17 @@ else()
     )
 endif()
 
+# Disable symbol versioning for embedded deployment
+# These libraries are bundled together for Kotlin Native, not system-wide installation
+# Symbol versioning is unnecessary and adds complexity when all deps are self-contained
+
 set(LIBBSD_CONFIGURE_CMD
     ./configure
     --host=${HOST_TRIPLET}
     --prefix=/usr
     ${LIBBSD_CONFIGURE_LIB_TYPE}
+    # Note: Symbol versioning is disabled via patch in cmake/ruby-app/patches/libbsd/linux/
+    # because configure doesn't support --disable-symbol-versioning
 )
 
 # Build libbsd dependency (Linux only)

@@ -1,0 +1,7 @@
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -100,5 +100,5 @@
+ @HAVE_LINKER_VERSION_SCRIPT_TRUE@am__append_4 = \
+-@HAVE_LINKER_VERSION_SCRIPT_TRUE@	-Wl,--version-script=libbsd.map \
++@HAVE_LINKER_VERSION_SCRIPT_TRUE@	 \
+ @HAVE_LINKER_VERSION_SCRIPT_TRUE@	# EOL

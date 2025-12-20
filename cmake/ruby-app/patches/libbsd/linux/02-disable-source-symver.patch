@@ -1,0 +1,6 @@
+--- a/src/local-link.h
++++ b/src/local-link.h
+@@ -50,3 +50,3 @@
+-#if defined(__ELF__) && !defined(__sun)
++#if defined(__ELF__) && !defined(__sun) && 0
+ #  if __has_attribute(symver)

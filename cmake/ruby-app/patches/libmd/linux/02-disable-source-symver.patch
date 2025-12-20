@@ -1,0 +1,8 @@
+--- a/src/local-link.h
++++ b/src/local-link.h
+@@ -37,3 +37,3 @@
+ #endif
+ 
+-#ifdef __ELF__
++#if defined(__ELF__) && 0
+ #define libmd_symver_default(alias, symbol, version) \

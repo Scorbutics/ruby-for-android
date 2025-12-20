@@ -21,6 +21,10 @@ else()
     )
 endif()
 
+# Disable symbol versioning for embedded deployment
+# These libraries are bundled together for Kotlin Native, not system-wide installation
+# Symbol versioning is unnecessary and adds complexity when all deps are self-contained
+
 set(LIBXCRYPT_CONFIGURE_CMD
     ./configure
     --host=${HOST_TRIPLET}
@@ -30,6 +34,7 @@ set(LIBXCRYPT_CONFIGURE_CMD
     --disable-xcrypt-compat-files
     --enable-hashes=strong,glibc
     --enable-obsolete-api=no
+    --disable-symvers  # libxcrypt-specific option (not standard autoconf)
 )
 
 # Build libxcrypt dependency (Linux only)
