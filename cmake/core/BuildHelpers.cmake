@@ -137,7 +137,9 @@ function(add_external_dependency)
 
     endif()
 
-    cmake_policy(SET CMP0135 OLD)
+    if(POLICY CMP0135)
+        cmake_policy(SET CMP0135 OLD)
+    endif()
 
     # Build download parameters based on source type
     set(DOWNLOAD_PARAMS "")
