@@ -63,24 +63,6 @@ function(declare_application)
         set(ARG_DEPENDENCIES_DIR "${ARG_APP_DIR}/dependencies")
     endif()
 
-    # Make variables available globally
-    set(APP_NAME "${ARG_APP_NAME}" PARENT_SCOPE)
-    set(APP_DIR "${ARG_APP_DIR}" PARENT_SCOPE)
-    set(APP_VERSION "${ARG_APP_VERSION}" PARENT_SCOPE)
-    set(APP_DESCRIPTION "${ARG_APP_DESCRIPTION}" PARENT_SCOPE)
-    set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}" PARENT_SCOPE)
-    set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}" PARENT_SCOPE)
-    set(APP_DEPENDENCIES "${ARG_APP_DEPENDENCIES}" PARENT_SCOPE)
-
-    # Also set in current scope for immediate use
-    set(APP_NAME "${ARG_APP_NAME}")
-    set(APP_DIR "${ARG_APP_DIR}")
-    set(APP_VERSION "${ARG_APP_VERSION}")
-    set(APP_DESCRIPTION "${ARG_APP_DESCRIPTION}")
-    set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}")
-    set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}")
-    set(APP_DEPENDENCIES "${ARG_APP_DEPENDENCIES}")
-
     # Project information
     message(STATUS "==========================================")
     message(STATUS "  ${ARG_APP_NAME} Cross-Platform Build System")
@@ -109,24 +91,47 @@ function(declare_application)
     # Validate configuration
     include(Validation)
 
+    set(EXISTING_APP_DEPENDENCIES "")
+
     # Create a top-level build target that depends on all dependency wrapper targets
     # This ensures that running 'make' builds the wrapper targets (not just the _external targets)
     # which in turn triggers any post-build steps like archive creation
     add_custom_target(app_build ALL)
     foreach(DEP ${ARG_APP_DEPENDENCIES})
         if(NOT TARGET ${DEP})
-            message(FATAL_ERROR "Dependency wrapper target not found: ${DEP}")
+            message(WARNING "Dependency wrapper target not found: ${DEP}")
+        else()
+            add_dependencies(app_build ${DEP})
+            list(APPEND EXISTING_APP_DEPENDENCIES ${DEP})
         endif()
-        add_dependencies(app_build ${DEP})
     endforeach()
-    message(STATUS "Created app_build target depending on: ${ARG_APP_DEPENDENCIES}")
+    message(STATUS "Created app_build target depending on: ${EXISTING_APP_DEPENDENCIES}")
+
+
+    # Make variables available globally
+    set(APP_NAME "${ARG_APP_NAME}" PARENT_SCOPE)
+    set(APP_DIR "${ARG_APP_DIR}" PARENT_SCOPE)
+    set(APP_VERSION "${ARG_APP_VERSION}" PARENT_SCOPE)
+    set(APP_DESCRIPTION "${ARG_APP_DESCRIPTION}" PARENT_SCOPE)
+    set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}" PARENT_SCOPE)
+    set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}" PARENT_SCOPE)
+    set(APP_DEPENDENCIES "${EXISTING_APP_DEPENDENCIES}" PARENT_SCOPE)
+
+    # Also set in current scope for immediate use
+    set(APP_NAME "${ARG_APP_NAME}")
+    set(APP_DIR "${ARG_APP_DIR}")
+    set(APP_VERSION "${ARG_APP_VERSION}")
+    set(APP_DESCRIPTION "${ARG_APP_DESCRIPTION}")
+    set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}")
+    set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}")
+    set(APP_DEPENDENCIES "${EXISTING_APP_DEPENDENCIES}")
 
     # Create clean targets
     add_custom_target(clean-libs
         COMMENT "Cleaning all library build directories"
     )
 
-    foreach(DEP ${ARG_APP_DEPENDENCIES})
+    foreach(DEP ${EXISTING_APP_DEPENDENCIES})
         add_dependencies(clean-libs ${DEP}_clean)
     endforeach()
 

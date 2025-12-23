@@ -47,7 +47,7 @@ if(NOT BUILD_STAGING_DIR)
 endif()
 
 # Verification script to check for missing critical extensions
-set(VERIFY_EXTENSIONS_SCRIPT "${APP_DIR}/scripts/verify_ruby_extensions.sh")
+set(VERIFY_EXTENSIONS_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/ruby-app/scripts/verify_ruby_extensions.sh")
 
 string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
 set(RUBY_BUILD_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}" CACHE PATH "Staging directory for installation")
