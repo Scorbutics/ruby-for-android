@@ -149,7 +149,20 @@ else()
     message(WARNING "Platform-specific include directory not found: ${PLATFORM_INCLUDE_SRC}")
 endif()
 
-# Step 6: Create ruby-stdlib-ext.zip (platform-specific extensions)
+# Step 6: Copy extra includes (right now, only zlib ones)
+message(STATUS "Copying extra includes...")
+set(EXTRA_INCLUDE_BASE "${BUILD_STAGING_DIR}/usr/local/include")
+set(EXTRA_INCLUDE_ENTRIES 
+    ${EXTRA_INCLUDE_BASE}/zlib.h 
+    ${EXTRA_INCLUDE_BASE}/zconf.h
+)
+foreach(ENTRY ${EXTRA_INCLUDE_ENTRIES})
+    get_filename_component(ENTRY_NAME "${ENTRY}" NAME)
+    file(COPY "${ENTRY}" DESTINATION "${INCLUDE_DIR}")
+    message(STATUS "  Copied: ${ENTRY_NAME}")
+endforeach()
+
+# Step 7: Create ruby-stdlib-ext.zip (platform-specific extensions)
 message(STATUS "Creating ruby-stdlib-ext.zip...")
 set(RUBY_STDLIB_EXT_DIR "${BUILD_STAGING_DIR}/usr/local/lib/ruby/${RUBY_ABI_VERSION}/${RUBY_PLATFORM_LOWER}")
 
@@ -180,7 +193,7 @@ else()
     message(WARNING "Platform-specific stdlib directory not found: ${RUBY_STDLIB_EXT_DIR}")
 endif()
 
-# Step 7: Create ruby-stdlib.zip (generic Ruby stdlib)
+# Step 8: Create ruby-stdlib.zip (generic Ruby stdlib)
 message(STATUS "Creating ruby-stdlib.zip...")
 set(RUBY_STDLIB_DIR "${BUILD_STAGING_DIR}/usr/local/lib/ruby")
 
@@ -239,7 +252,7 @@ endif()
 file(REMOVE_RECURSE "${TEMP_STDLIB_DIR}")
 message(STATUS "  Created ruby-stdlib.zip")
 
-# Step 8: Create final archive
+# Step 9: Create final archive
 message(STATUS "Creating final archive...")
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E tar cf "${ARCHIVE_OUTPUT}" --format=zip external assets
