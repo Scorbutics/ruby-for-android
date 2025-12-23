@@ -149,16 +149,31 @@ else()
     message(WARNING "Platform-specific include directory not found: ${PLATFORM_INCLUDE_SRC}")
 endif()
 
-# Step 6: Copy extra includes (right now, only zlib ones)
+# Step 6: Copy extra includes (zlib and OpenSSL headers)
 message(STATUS "Copying extra includes...")
 set(EXTRA_INCLUDE_BASE "${BUILD_STAGING_DIR}/usr/local/include")
-set(EXTRA_INCLUDE_ENTRIES 
-    ${EXTRA_INCLUDE_BASE}/zlib.h 
+
+# Start with the openssl directory itself (not its contents)
+set(EXTRA_INCLUDE_ENTRIES)
+if(EXISTS "${EXTRA_INCLUDE_BASE}/openssl" AND IS_DIRECTORY "${EXTRA_INCLUDE_BASE}/openssl")
+    list(APPEND EXTRA_INCLUDE_ENTRIES "${EXTRA_INCLUDE_BASE}/openssl")
+endif()
+
+# Add zlib headers
+list(APPEND EXTRA_INCLUDE_ENTRIES
+    ${EXTRA_INCLUDE_BASE}/zlib.h
     ${EXTRA_INCLUDE_BASE}/zconf.h
 )
+
 foreach(ENTRY ${EXTRA_INCLUDE_ENTRIES})
     get_filename_component(ENTRY_NAME "${ENTRY}" NAME)
-    file(COPY "${ENTRY}" DESTINATION "${INCLUDE_DIR}")
+    if(IS_DIRECTORY "${ENTRY}")
+        file(REMOVE_RECURSE "${INCLUDE_DIR}/${ENTRY_NAME}")
+        file(MAKE_DIRECTORY "${INCLUDE_DIR}/${ENTRY_NAME}")
+        file(COPY "${ENTRY}/" DESTINATION "${INCLUDE_DIR}/${ENTRY_NAME}")
+    else()
+        file(COPY "${ENTRY}" DESTINATION "${INCLUDE_DIR}")
+    endif()
     message(STATUS "  Copied: ${ENTRY_NAME}")
 endforeach()
 
