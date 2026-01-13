@@ -83,7 +83,6 @@ set(BUILD_ENV
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
     MACOSX_DEPLOYMENT_TARGET=${MACOS_MIN_VERSION}
-    DYLD_LIBRARY_PATH=${BUILD_STAGING_DIR}/usr/lib:${BUILD_STAGING_DIR}/usr/local/lib
 )
 
 # Export for use in dependency builds

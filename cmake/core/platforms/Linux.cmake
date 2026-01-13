@@ -53,7 +53,6 @@ set(BUILD_ENV
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
-    LD_LIBRARY_PATH=${BUILD_STAGING_DIR}/usr/lib:${BUILD_STAGING_DIR}/usr/local/lib
 )
 
 # Export for use in dependency builds

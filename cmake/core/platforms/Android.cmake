@@ -55,12 +55,24 @@ endif()
 message(STATUS "Android Host Triplet: ${ANDROID_HOST_TRIPLET}")
 message(STATUS "Android Host Short: ${ANDROID_HOST_SHORT}")
 
+# Detect host platform for NDK prebuilt tools (same logic as Android CMake toolchain)
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    set(ANDROID_HOST_TAG "linux-x86_64")
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    set(ANDROID_HOST_TAG "darwin-x86_64")
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set(ANDROID_HOST_TAG "windows-x86_64")
+else()
+    message(FATAL_ERROR "Unsupported host system: ${CMAKE_HOST_SYSTEM_NAME}")
+endif()
+message(STATUS "Android Host Tag: ${ANDROID_HOST_TAG}")
+
 # Detect toolchain paths
 if(DEFINED CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX)
     set(TOOLCHAIN_PREFIX "${CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX}")
 else()
-    # Fallback: construct from NDK path
-    set(TOOLCHAIN_PREFIX "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/")
+    # Fallback: construct from NDK path using detected host platform
+    set(TOOLCHAIN_PREFIX "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${ANDROID_HOST_TAG}/bin/")
 endif()
 
 get_filename_component(TOOLCHAIN_BIN "${TOOLCHAIN_PREFIX}" DIRECTORY)
@@ -102,14 +114,16 @@ endif()
 set(CXXFLAGS "${CFLAGS}")
 set(CPPFLAGS "${CFLAGS}")
 
-set(LDFLAGS "-L${BUILD_STAGING_DIR}/usr/lib")
-set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/local/lib")
-set(LDFLAGS "${LDFLAGS} -lz -lm")
+# Add NDK system library paths for Android platform libraries (liblog, libz, etc.)
+set(NDK_SYSLIB_DIR "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${ANDROID_HOST_TAG}/sysroot/usr/lib/${ANDROID_HOST_TRIPLET}/${ANDROID_API_LEVEL}")
+set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/lib -L${BUILD_STAGING_DIR}/usr/local/lib")
+set(LDFLAGS "${LDFLAGS} -L${NDK_SYSLIB_DIR}")
+set(LDFLAGS "${LDFLAGS} -lz -lm -llog")
 
 # Set environment variables for autoconf-based builds
 set(BUILD_ENV
-    "CC=${CROSS_CC} -target ${CLANG_TARGET}"
-    "CXX=${CROSS_CXX} -target ${CLANG_TARGET}"
+    "CC=${CROSS_CC}"
+    "CXX=${CROSS_CXX}"
     AR=${CROSS_AR}
     RANLIB=${CROSS_RANLIB}
     STRIP=${CROSS_STRIP}
@@ -126,7 +140,6 @@ set(BUILD_ENV
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
-    LD_LIBRARY_PATH=${BUILD_STAGING_DIR}/usr/lib:${BUILD_STAGING_DIR}/usr/local/lib
 )
 
 # Export for use in dependency builds

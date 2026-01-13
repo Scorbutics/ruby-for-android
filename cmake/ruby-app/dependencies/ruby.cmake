@@ -70,6 +70,14 @@ if(TARGET_PLATFORM STREQUAL "Linux")
     list(APPEND RUBY_DEPENDENCIES libxcrypt)
 endif()
 
+# Platform-specific environment variables
+set(RUBY_ENV_VARS "")
+if(TARGET_PLATFORM STREQUAL "Android")
+    # Ruby needs DLDFLAGS set explicitly for extension builds on Android
+    # DLDFLAGS is used by mkmf.rb when building native extensions
+    set(RUBY_ENV_VARS "DLDFLAGS=${LDFLAGS}")
+endif()
+
 add_external_dependency(
     NAME ruby
     VERSION ${RUBY_VERSION}
@@ -78,6 +86,7 @@ add_external_dependency(
     ARCHIVE_NAME "ruby-${RUBY_VERSION}"
     CONFIGURE_COMMAND ${RUBY_CONFIGURE_CMD}
     INSTALL_COMMAND ${RUBY_INSTALL_CMD}
+    ENV_VARS ${RUBY_ENV_VARS}
     DEPENDS ${RUBY_DEPENDENCIES}
 )
 
