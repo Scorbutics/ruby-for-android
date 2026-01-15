@@ -96,28 +96,49 @@ function(combine_fat_library)
                 
                 set(extracted_count ${unique_members})
             else()
-                # Has duplicates - extract only first occurrence of each member using 'ar xN 1'
-                message(STATUS "  Archive has duplicates (${total_members} members, ${unique_members} unique) - extracting first occurrence of each")
-
+                # Has duplicates - extract by creating temporary archives and removing members
+                message(STATUS "  Archive has duplicates (${total_members} members, ${unique_members} unique) - extracting all via archive manipulation")
+                
+                # Copy archive to temp location
+                set(temp_archive "${lib_subdir}/temp_archive.a")
+                file(COPY ${lib} DESTINATION ${lib_subdir})
+                get_filename_component(lib_name_only "${lib}" NAME)
+                file(RENAME "${lib_subdir}/${lib_name_only}" "${temp_archive}")
+                
+                # Extract members in reverse order (so we get earlier occurrences first)
+                list(REVERSE member_list)
+                
+                set(member_index ${total_members})
                 set(extracted_count 0)
-                set(member_index 0)
-                foreach(member ${member_list_unique})
-                    # Extract only the FIRST occurrence of this member (index 1)
+                foreach(member ${member_list})
+                    # Extract this member (gets last occurrence in current archive state)
                     execute_process(
-                        COMMAND ${CMAKE_AR} xN 1 ${lib} ${member}
+                        COMMAND ${CMAKE_AR} x ${temp_archive} ${member}
                         WORKING_DIRECTORY ${lib_subdir}
                         RESULT_VARIABLE result
                         OUTPUT_QUIET ERROR_QUIET
                     )
-
+                    
                     if(EXISTS "${lib_subdir}/${member}")
                         # Rename with unique index
                         file(RENAME "${lib_subdir}/${member}" "${lib_subdir}/${lib_index}_${member_index}_${member}")
                         math(EXPR extracted_count "${extracted_count} + 1")
+                        
+                        # Remove this member from the temp archive
+                        execute_process(
+                            COMMAND ${CMAKE_AR} d ${temp_archive} ${member}
+                            RESULT_VARIABLE result
+                            OUTPUT_QUIET ERROR_QUIET
+                        )
                     endif()
-
-                    math(EXPR member_index "${member_index} + 1")
+                    
+                    math(EXPR member_index "${member_index} - 1")
                 endforeach()
+                
+                # Clean up temp archive
+                file(REMOVE ${temp_archive})
+                
+                message(STATUS "  Extracted ${extracted_count} object files from ${lib_name}")
             endif()
             
             message(STATUS "  Extracted ${extracted_count} object files from ${lib_name}")
