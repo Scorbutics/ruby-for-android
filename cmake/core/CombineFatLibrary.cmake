@@ -4,6 +4,11 @@
 function(combine_fat_library)
     # Set policy to handle empty list elements properly
     cmake_policy(SET CMP0007 NEW)
+
+    # Set policy to support IN_LIST operator (CMake 3.3+)
+    if(POLICY CMP0057)
+        cmake_policy(SET CMP0057 NEW)
+    endif()
     
     cmake_parse_arguments(
         ARG
@@ -91,49 +96,28 @@ function(combine_fat_library)
                 
                 set(extracted_count ${unique_members})
             else()
-                # Has duplicates - extract by creating temporary archives and removing members
-                message(STATUS "  Archive has duplicates (${total_members} members, ${unique_members} unique) - extracting all via archive manipulation")
-                
-                # Copy archive to temp location
-                set(temp_archive "${lib_subdir}/temp_archive.a")
-                file(COPY ${lib} DESTINATION ${lib_subdir})
-                get_filename_component(lib_name_only "${lib}" NAME)
-                file(RENAME "${lib_subdir}/${lib_name_only}" "${temp_archive}")
-                
-                # Extract members in reverse order (so we get earlier occurrences first)
-                list(REVERSE member_list)
-                
-                set(member_index ${total_members})
+                # Has duplicates - extract only first occurrence of each member using 'ar xN 1'
+                message(STATUS "  Archive has duplicates (${total_members} members, ${unique_members} unique) - extracting first occurrence of each")
+
                 set(extracted_count 0)
-                foreach(member ${member_list})
-                    # Extract this member (gets last occurrence in current archive state)
+                set(member_index 0)
+                foreach(member ${member_list_unique})
+                    # Extract only the FIRST occurrence of this member (index 1)
                     execute_process(
-                        COMMAND ${CMAKE_AR} x ${temp_archive} ${member}
+                        COMMAND ${CMAKE_AR} xN 1 ${lib} ${member}
                         WORKING_DIRECTORY ${lib_subdir}
                         RESULT_VARIABLE result
                         OUTPUT_QUIET ERROR_QUIET
                     )
-                    
+
                     if(EXISTS "${lib_subdir}/${member}")
                         # Rename with unique index
                         file(RENAME "${lib_subdir}/${member}" "${lib_subdir}/${lib_index}_${member_index}_${member}")
                         math(EXPR extracted_count "${extracted_count} + 1")
-                        
-                        # Remove this member from the temp archive
-                        execute_process(
-                            COMMAND ${CMAKE_AR} d ${temp_archive} ${member}
-                            RESULT_VARIABLE result
-                            OUTPUT_QUIET ERROR_QUIET
-                        )
                     endif()
-                    
-                    math(EXPR member_index "${member_index} - 1")
+
+                    math(EXPR member_index "${member_index} + 1")
                 endforeach()
-                
-                # Clean up temp archive
-                file(REMOVE ${temp_archive})
-                
-                message(STATUS "  Extracted ${extracted_count} object files from ${lib_name}")
             endif()
             
             message(STATUS "  Extracted ${extracted_count} object files from ${lib_name}")
@@ -166,58 +150,81 @@ function(combine_fat_library)
 
     # Check for duplicate symbols and filter object files
     message(STATUS "Checking for duplicate symbols...")
-    set(defined_symbols "")
+
+    # Run nm once for all object files with filename prefixes (-A flag)
+    execute_process(
+        COMMAND ${CMAKE_NM} -A -g ${all_obj_files}
+        OUTPUT_VARIABLE nm_output_all
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Parse nm output: format is "filename: address type symbol"
+    # Build a map of symbols to first file that defines them
+    set(file_has_duplicate "")  # Files to skip (later duplicates only)
+
+    # Split output into lines
+    string(REGEX REPLACE "\n" ";" nm_lines "${nm_output_all}")
+
+    foreach(line ${nm_lines})
+        if(NOT line)
+            continue()
+        endif()
+
+        # Parse line: "filename: address type symbol"
+        # Match only strong symbols (T, D, B, R)
+        if(NOT line MATCHES "^(.+): +[0-9a-fA-F]+ +([TDBR]) +(.+)$")
+            continue()
+        endif()
+
+        set(obj_file "${CMAKE_MATCH_1}")
+        set(symbol "${CMAKE_MATCH_3}")
+
+        # Skip C++ type info and vtable symbols
+        if(symbol MATCHES "^_ZT[ISV]" OR symbol MATCHES "^_ZN.*C[12]E" OR symbol MATCHES "^_ZN.*D[012]E")
+            continue()
+        endif()
+
+        # Check if we've seen this symbol before
+        set(map_key "SYM_${symbol}")
+        if(DEFINED ${map_key})
+            # Duplicate found - mark ONLY the current file (later occurrence)
+            list(APPEND file_has_duplicate "${obj_file}")
+        else()
+            # First occurrence of this symbol - record it
+            set(${map_key} "${obj_file}")
+        endif()
+    endforeach()
+
+    # Remove duplicate file entries
+    if(file_has_duplicate)
+        list(REMOVE_DUPLICATES file_has_duplicate)
+    endif()
+
+    # Build filtered list
     set(filtered_obj_files "")
     set(skipped_count 0)
-    
+
     foreach(obj_file ${all_obj_files})
-        # Get defined symbols from this object file
-        # Only check strong symbols (T, D, B, R) - skip weak symbols (V, W)
-        execute_process(
-            COMMAND ${CMAKE_NM} -g ${obj_file}
-            OUTPUT_VARIABLE nm_output
-            ERROR_QUIET
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        
-        # Extract only STRONG defined symbols (T = text/code, D = initialized data, B = BSS, R = read-only data)
-        # Skip weak symbols (V, W) and common symbols (C) which can have multiple definitions
-        string(REGEX MATCHALL "[0-9a-fA-F]+ [TDBR] [^\n]+" defined_lines "${nm_output}")
-        
-        set(has_duplicate FALSE)
-        set(duplicate_symbols "")
-        foreach(line ${defined_lines})
-            # Extract symbol name (third field)
-            string(REGEX REPLACE "^[0-9a-fA-F]+ [TDBR] (.+)$" "\\1" symbol "${line}")
-            
-            # Skip C++ type info and vtable symbols - these are often duplicated and handled by linker
-            if(symbol MATCHES "^_ZT[ISV]" OR symbol MATCHES "^_ZN.*C[12]E" OR symbol MATCHES "^_ZN.*D[012]E")
-                continue()
+        # Check if file has duplicates using IN_LIST (CMake 3.3+) or FIND fallback
+        set(has_dup FALSE)
+        if(POLICY CMP0057)
+            if(obj_file IN_LIST file_has_duplicate)
+                set(has_dup TRUE)
             endif()
-            
-            # Check if this symbol is already defined
-            list(FIND defined_symbols "${symbol}" symbol_index)
-            if(NOT symbol_index EQUAL -1)
-                set(has_duplicate TRUE)
-                list(APPEND duplicate_symbols "${symbol}")
+        else()
+            list(FIND file_has_duplicate "${obj_file}" _idx)
+            if(NOT _idx EQUAL -1)
+                set(has_dup TRUE)
             endif()
-        endforeach()
-        
-        if(has_duplicate)
-            # Skip this object file
+        endif()
+
+        if(has_dup)
             get_filename_component(obj_name "${obj_file}" NAME)
-            message(STATUS "  Skipping ${obj_name} (duplicate symbols: ${duplicate_symbols})")
+            message(STATUS "  Skipping ${obj_name} (has duplicate symbols)")
             math(EXPR skipped_count "${skipped_count} + 1")
         else()
-            # Add this object file and record its symbols
             list(APPEND filtered_obj_files "${obj_file}")
-            foreach(line ${defined_lines})
-                string(REGEX REPLACE "^[0-9a-fA-F]+ [TDBR] (.+)$" "\\1" symbol "${line}")
-                # Only track non-typeinfo symbols
-                if(NOT (symbol MATCHES "^_ZT[ISV]" OR symbol MATCHES "^_ZN.*C[12]E" OR symbol MATCHES "^_ZN.*D[012]E"))
-                    list(APPEND defined_symbols "${symbol}")
-                endif()
-            endforeach()
         endif()
     endforeach()
     
