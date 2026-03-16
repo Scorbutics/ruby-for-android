@@ -25,10 +25,13 @@ if(NOT DEFINED COMBINE_NM)
     message(FATAL_ERROR "COMBINE_NM must be defined")
 endif()
 
-# Set CMAKE_AR, CMAKE_RANLIB, and CMAKE_NM for the function
+# Set CMAKE_AR, CMAKE_RANLIB, CMAKE_NM, and CMAKE_OBJCOPY for the function
 set(CMAKE_AR "${COMBINE_AR}")
 set(CMAKE_RANLIB "${COMBINE_RANLIB}")
 set(CMAKE_NM "${COMBINE_NM}")
+if(DEFINED COMBINE_OBJCOPY)
+    set(CMAKE_OBJCOPY "${COMBINE_OBJCOPY}")
+endif()
 
 # Convert semicolon-separated string to list
 string(REPLACE ";" "\\;" LIBS_LIST "${COMBINE_LIBS}")

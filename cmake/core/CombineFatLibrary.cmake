@@ -181,8 +181,9 @@ function(combine_fat_library)
     )
 
     # Parse nm output: format is "filename: address type symbol"
-    # Build a map of symbols to first file that defines them
-    set(file_has_duplicate "")  # Files to skip (later duplicates only)
+    # Build a map of symbols to first file that defines them.
+    # Track per-file: how many unique symbols it introduces vs total strong symbols.
+    # Only skip files that contribute NO new symbols (pure duplicates).
 
     # Split output into lines
     string(REGEX REPLACE "\n" ";" nm_lines "${nm_output_all}")
@@ -209,47 +210,80 @@ function(combine_fat_library)
         # Check if we've seen this symbol before
         set(map_key "SYM_${symbol}")
         if(DEFINED ${map_key})
-            # Duplicate found - mark ONLY the current file (later occurrence)
-            list(APPEND file_has_duplicate "${obj_file}")
+            # Duplicate symbol - track count and symbol names per file
+            if(DEFINED "FILE_DUP_${obj_file}")
+                math(EXPR count "${FILE_DUP_${obj_file}} + 1")
+                set("FILE_DUP_${obj_file}" "${count}")
+            else()
+                set("FILE_DUP_${obj_file}" 1)
+            endif()
+            # Track the actual duplicate symbol names for later localization
+            list(APPEND "FILE_DUP_SYMS_${obj_file}" "${symbol}")
         else()
-            # First occurrence of this symbol - record it
+            # First occurrence of this symbol - record it and credit the file
             set(${map_key} "${obj_file}")
+            if(DEFINED "FILE_NEW_${obj_file}")
+                math(EXPR count "${FILE_NEW_${obj_file}} + 1")
+                set("FILE_NEW_${obj_file}" "${count}")
+            else()
+                set("FILE_NEW_${obj_file}" 1)
+            endif()
         endif()
     endforeach()
 
-    # Remove duplicate file entries
-    if(file_has_duplicate)
-        list(REMOVE_DUPLICATES file_has_duplicate)
-    endif()
-
-    # Build filtered list
+    # Build filtered list: only skip files that contribute zero new symbols.
+    # For kept files with duplicate symbols, localize the duplicates via objcopy
+    # so they don't cause linker errors when using --whole-archive.
     set(filtered_obj_files "")
     set(skipped_count 0)
+    set(localized_count 0)
 
     foreach(obj_file ${all_obj_files})
-        # Check if file has duplicates using IN_LIST (CMake 3.3+) or FIND fallback
-        set(has_dup FALSE)
-        if(POLICY CMP0057)
-            if(obj_file IN_LIST file_has_duplicate)
-                set(has_dup TRUE)
-            endif()
-        else()
-            list(FIND file_has_duplicate "${obj_file}" _idx)
-            if(NOT _idx EQUAL -1)
-                set(has_dup TRUE)
-            endif()
+        set(new_syms 0)
+        if(DEFINED "FILE_NEW_${obj_file}")
+            set(new_syms "${FILE_NEW_${obj_file}}")
         endif()
 
-        if(has_dup)
+        set(dup_syms 0)
+        if(DEFINED "FILE_DUP_${obj_file}")
+            set(dup_syms "${FILE_DUP_${obj_file}}")
+        endif()
+
+        if(new_syms EQUAL 0 AND dup_syms GREATER 0)
+            # File contributes nothing new - safe to skip
             get_filename_component(obj_name "${obj_file}" NAME)
-            message(STATUS "  Skipping ${obj_name} (has duplicate symbols)")
+            message(STATUS "  Skipping ${obj_name} (${dup_syms} duplicate symbols, 0 new)")
             math(EXPR skipped_count "${skipped_count} + 1")
         else()
+            if(dup_syms GREATER 0)
+                get_filename_component(obj_name "${obj_file}" NAME)
+                # Localize duplicate symbols so they don't clash at link time
+                if(CMAKE_OBJCOPY)
+                    set(objcopy_args "")
+                    foreach(dup_sym ${FILE_DUP_SYMS_${obj_file}})
+                        list(APPEND objcopy_args "--localize-symbol=${dup_sym}")
+                    endforeach()
+                    execute_process(
+                        COMMAND ${CMAKE_OBJCOPY} ${objcopy_args} "${obj_file}"
+                        RESULT_VARIABLE result
+                        ERROR_VARIABLE error
+                    )
+                    if(result AND NOT result EQUAL 0)
+                        message(WARNING "  Failed to localize symbols in ${obj_name}: ${error}")
+                    else()
+                        message(STATUS "  Keeping ${obj_name} (${new_syms} new, localized ${dup_syms} duplicate symbols)")
+                        math(EXPR localized_count "${localized_count} + 1")
+                    endif()
+                else()
+                    message(STATUS "  Keeping ${obj_name} (${new_syms} new, ${dup_syms} duplicate - no objcopy available to localize)")
+                endif()
+            endif()
             list(APPEND filtered_obj_files "${obj_file}")
         endif()
     endforeach()
-    
-    message(STATUS "Skipped ${skipped_count} object files with duplicate symbols")
+
+    message(STATUS "Skipped ${skipped_count} object files with only duplicate symbols")
+    message(STATUS "Localized duplicate symbols in ${localized_count} object files")
     list(LENGTH filtered_obj_files final_obj_count)
     message(STATUS "Adding ${final_obj_count} object files to fat library...")
 
