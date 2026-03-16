@@ -81,8 +81,8 @@ message(STATUS "Toolchain bin directory: ${TOOLCHAIN_BIN}")
 # Set cross-compilation tools
 set(CLANG_TARGET "${ANDROID_HOST_TRIPLET}${ANDROID_API_LEVEL}")
 
-set(CROSS_CC "${TOOLCHAIN_BIN}/clang")
-set(CROSS_CXX "${TOOLCHAIN_BIN}/clang++")
+set(CROSS_CC "${TOOLCHAIN_BIN}/clang -target ${CLANG_TARGET}")
+set(CROSS_CXX "${TOOLCHAIN_BIN}/clang++ -target ${CLANG_TARGET}")
 set(CROSS_AR "${TOOLCHAIN_BIN}/llvm-ar")
 set(CROSS_RANLIB "${TOOLCHAIN_BIN}/llvm-ranlib")
 set(CROSS_STRIP "${TOOLCHAIN_BIN}/llvm-strip")
@@ -100,8 +100,7 @@ endforeach()
 set(ANDROID_SYSROOT "${TOOLCHAIN_BIN}/../sysroot")
 
 # Set compiler and linker flags
-set(CFLAGS "-target ${CLANG_TARGET}")
-set(CFLAGS "${CFLAGS} -I${BUILD_STAGING_DIR}/usr/include")
+set(CFLAGS "-I${BUILD_STAGING_DIR}/usr/include")
 set(CFLAGS "${CFLAGS} -I${BUILD_STAGING_DIR}/usr/local/include")
 set(CFLAGS "${CFLAGS} -O3 -DNDEBUG")
 set(CFLAGS "${CFLAGS} -U__ANDROID_API__ -D__ANDROID_API__=${ANDROID_API_LEVEL}")
@@ -116,7 +115,7 @@ set(CPPFLAGS "${CFLAGS}")
 
 # Add NDK system library paths for Android platform libraries (liblog, libz, etc.)
 set(NDK_SYSLIB_DIR "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${ANDROID_HOST_TAG}/sysroot/usr/lib/${ANDROID_HOST_TRIPLET}/${ANDROID_API_LEVEL}")
-set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/lib -L${BUILD_STAGING_DIR}/usr/local/lib")
+set(LDFLAGS "-L${BUILD_STAGING_DIR}/usr/lib -L${BUILD_STAGING_DIR}/usr/local/lib")
 set(LDFLAGS "${LDFLAGS} -L${NDK_SYSLIB_DIR}")
 set(LDFLAGS "${LDFLAGS} -lz -lm -llog")
 
@@ -129,6 +128,7 @@ set(BUILD_ENV
     STRIP=${CROSS_STRIP}
     LD=${CROSS_LD}
     AS=${CROSS_AS}
+    "ASFLAGS=-target ${CLANG_TARGET}"
     ANDROID_API=${ANDROID_API_LEVEL}
     ANDROID_NDK=${CMAKE_ANDROID_NDK}
     ANDROID_NDK_ROOT=${CMAKE_ANDROID_NDK}

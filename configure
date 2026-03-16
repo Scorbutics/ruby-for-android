@@ -232,15 +232,12 @@ sync:
 # Start the development container
 docker-start:
 	@echo "Starting development container..."
-	@if docker compose up -d ruby-android-ndk 2>&1 | grep -q "Started\|Running"; then \
+	@docker compose up -d ruby-android-ndk; \
+	if docker ps --filter "name=$(CONTAINER)" --format "{{.Names}}" 2>/dev/null | grep -q "^$(CONTAINER)$$"; then \
 		echo "Development container started"; \
 	else \
-		if docker ps --filter "name=$(CONTAINER)" --format "{{.Names}}" 2>/dev/null | grep -q "^$(CONTAINER)$$"; then \
-			echo "Development container already running"; \
-		else \
-			echo "Error: Failed to start development container"; \
-			exit 1; \
-		fi \
+		echo "Error: Failed to start development container"; \
+		exit 1; \
 	fi
 	@echo "Waiting for container to be ready..."
 	@max_attempts=30; attempt=0; \
