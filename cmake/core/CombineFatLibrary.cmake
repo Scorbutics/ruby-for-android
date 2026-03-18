@@ -194,6 +194,14 @@ function(combine_fat_library)
         endif()
 
         # Parse line: "filename: address type symbol"
+        # Track undefined (U) references so we know which symbols are needed
+        if(line MATCHES "^(.+): +U +(.+)$")
+            set(ref_file "${CMAKE_MATCH_1}")
+            set(ref_symbol "${CMAKE_MATCH_2}")
+            list(APPEND "FILE_UNDEF_${ref_file}" "${ref_symbol}")
+            continue()
+        endif()
+
         # Match only strong symbols (T, D, B, R)
         if(NOT line MATCHES "^(.+): +[0-9a-fA-F]+ +([TDBR]) +(.+)$")
             continue()
@@ -234,6 +242,10 @@ function(combine_fat_library)
     # Build filtered list: only skip files that contribute zero new symbols.
     # For kept files with duplicate symbols, localize the duplicates via objcopy
     # so they don't cause linker errors when using --whole-archive.
+    #
+    # Localizing duplicates in non-first-definers is always safe: the first file
+    # to define a symbol has it counted as "new" (never "duplicate"), so it always
+    # keeps a global copy. Any U references from other files resolve to that copy.
     set(filtered_obj_files "")
     set(skipped_count 0)
     set(localized_count 0)

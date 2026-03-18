@@ -27,6 +27,16 @@ if(NOT EXISTS "${EXTINIT_OBJ}")
 endif()
 message(STATUS "Found extinit.o: ${EXTINIT_OBJ}")
 
+# Find the critical encinit.o file (contains Init_enc() that registers all encodings)
+# Ruby generates this when built with --with-static-linked-ext. It defines Init_enc()
+# which calls ruby_init_ext() for each encoding, replacing the dummy dmyenc.o from
+# libruby-static.a that would try (and fail) to load enc/*.so from disk.
+set(ENCINIT_OBJ "${RUBY_SRC_DIR}/enc/encinit.o")
+if(NOT EXISTS "${ENCINIT_OBJ}")
+    message(FATAL_ERROR "encinit.o not found at ${ENCINIT_OBJ}. This file is required for static encoding initialization. Ensure Ruby was built with --with-static-linked-ext.")
+endif()
+message(STATUS "Found encinit.o: ${ENCINIT_OBJ}")
+
 # Find all extension .a files
 # Extensions are typically in ext/ and enc/ directories
 file(GLOB_RECURSE EXT_LIBS_ENC "${RUBY_SRC_DIR}/enc/*.a")
@@ -62,7 +72,7 @@ if(NOT ALL_EXT_LIBS)
     message(FATAL_ERROR "No extension .a files found in ${RUBY_SRC_DIR}")
 endif()
 
-message(STATUS "Found ${CMAKE_MATCH_COUNT} extension libraries:")
+message(STATUS "Found extension libraries:")
 foreach(lib ${ALL_EXT_LIBS})
     file(RELATIVE_PATH rel_path "${RUBY_SRC_DIR}" "${lib}")
     message(STATUS "  - ${rel_path}")
@@ -73,9 +83,12 @@ set(TEMP_DIR "${RUBY_BUILD_DIR}/temp_ext_combine")
 file(REMOVE_RECURSE "${TEMP_DIR}")
 file(MAKE_DIRECTORY "${TEMP_DIR}")
 
-# Add extinit.o to the objects list first (so it's at the beginning)
-set(ALL_OBJECTS "${EXTINIT_OBJ}")
+# Add extinit.o and encinit.o to the objects list first (so they're at the beginning).
+# encinit.o defines Init_enc() which shadows dmyenc.o's dummy Init_enc() from
+# libruby-static.a, because libruby-ext.a is processed first in the fat library.
+set(ALL_OBJECTS "${EXTINIT_OBJ}" "${ENCINIT_OBJ}")
 message(STATUS "Including extinit.o for static extension initialization")
+message(STATUS "Including encinit.o for static encoding initialization")
 
 # Extract all .o files from each .a file into the temp directory
 foreach(ext_lib ${ALL_EXT_LIBS})
@@ -104,10 +117,10 @@ if(NOT ALL_OBJECTS)
     message(FATAL_ERROR "No object files extracted from extension libraries")
 endif()
 
-message(STATUS "Extracted ${CMAKE_MATCH_COUNT} object files")
+list(LENGTH ALL_OBJECTS total_objects)
+message(STATUS "Total object files to combine: ${total_objects}")
 
 # Create the combined archive
-# We need to create it in the temp directory first to use relative paths
 get_filename_component(OUTPUT_DIR "${OUTPUT_LIB}" DIRECTORY)
 file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 
