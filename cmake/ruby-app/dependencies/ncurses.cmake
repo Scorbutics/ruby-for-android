@@ -43,6 +43,7 @@ endif()
             --without-progs
             --without-tests
             --disable-database
+            --with-fallbacks=vt100,vt102,xterm,xterm-256color
         )
     endif()
 
