@@ -90,7 +90,8 @@ if(TARGET_PLATFORM STREQUAL "iOS")
     list(APPEND RUBY_CONFIGURE_CMD
         ac_cv_func_getattrlist=no
         ac_cv_func_fgetattrlist=no
-        ac_cv_header_sys_random_h=yes
+        ac_cv_header_sys_random_h=no
+        ac_cv_func_getentropy=yes
     )
 endif()
 
