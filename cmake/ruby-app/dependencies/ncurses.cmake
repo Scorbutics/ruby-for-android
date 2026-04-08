@@ -31,6 +31,16 @@ else()
     set(NCURSES_BUILD_CC "gcc")
 endif()
 
+    # iOS SDK doesn't have sys/ttydev.h (exists on macOS but not iOS).
+    # Since the host triplet looks like macOS (aarch64-apple-darwin),
+    # autoconf's cross-compile guess wrongly assumes the header exists.
+    set(NCURSES_PLATFORM_CONFIGURE_ARGS "")
+    if(TARGET_PLATFORM STREQUAL "iOS")
+        set(NCURSES_PLATFORM_CONFIGURE_ARGS
+            ac_cv_header_sys_ttydev_h=no
+        )
+    endif()
+
     set(NCURSES_CONFIGURE_CMD
         ./configure
         --host=${HOST_TRIPLET}
@@ -41,6 +51,7 @@ endif()
         ${NCURSES_CONFIGURE_LIB_TYPE}
         --with-versioned-syms=no
         --disable-stripping
+        ${NCURSES_PLATFORM_CONFIGURE_ARGS}
     )
 
 # Build ncurses dependency
