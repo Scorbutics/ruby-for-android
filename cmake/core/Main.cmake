@@ -79,6 +79,14 @@ function(declare_application)
         include("${ARG_APP_DIR}/Application.cmake")
     endif()
 
+    # Set in current scope before loading dependencies so they can access APP_DIR
+    set(APP_NAME "${ARG_APP_NAME}")
+    set(APP_DIR "${ARG_APP_DIR}")
+    set(APP_VERSION "${ARG_APP_VERSION}")
+    set(APP_DESCRIPTION "${ARG_APP_DESCRIPTION}")
+    set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}")
+    set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}")
+
     # Load dependency configurations
     foreach(DEP ${ARG_APP_DEPENDENCIES})
         set(DEP_FILE "${ARG_DEPENDENCIES_DIR}/${DEP}.cmake")
@@ -107,7 +115,6 @@ function(declare_application)
     endforeach()
     message(STATUS "Created app_build target depending on: ${EXISTING_APP_DEPENDENCIES}")
 
-
     # Make variables available globally
     set(APP_NAME "${ARG_APP_NAME}" PARENT_SCOPE)
     set(APP_DIR "${ARG_APP_DIR}" PARENT_SCOPE)
@@ -116,15 +123,6 @@ function(declare_application)
     set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}" PARENT_SCOPE)
     set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}" PARENT_SCOPE)
     set(APP_DEPENDENCIES "${EXISTING_APP_DEPENDENCIES}" PARENT_SCOPE)
-
-    # Also set in current scope for immediate use
-    set(APP_NAME "${ARG_APP_NAME}")
-    set(APP_DIR "${ARG_APP_DIR}")
-    set(APP_VERSION "${ARG_APP_VERSION}")
-    set(APP_DESCRIPTION "${ARG_APP_DESCRIPTION}")
-    set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}")
-    set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}")
-    set(APP_DEPENDENCIES "${EXISTING_APP_DEPENDENCIES}")
 
     # Create clean targets
     add_custom_target(clean-libs
