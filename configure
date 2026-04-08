@@ -141,12 +141,13 @@ else
 		echo "Android NDK: $ANDROID_NDK"
 	fi
 
-	# Check for iOS build
-	if grep -q "DIOS=TRUE" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
-		echo "Error: iOS builds require macOS host with Xcode (cannot use Docker mode)"
-		echo "Use --without-docker flag for iOS builds"
-		exit 1
-	fi
+fi
+
+# Check for iOS build with Docker (not supported)
+if [ $USE_DOCKER -eq 1 ] && grep -q "DIOS=TRUE" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
+	echo "Error: iOS builds require macOS host with Xcode (cannot use Docker mode)"
+	echo "Use --without-docker flag for iOS builds"
+	exit 1
 fi
 
 # Check for iOS build (local mode)
