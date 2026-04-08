@@ -15,6 +15,7 @@ TOOLCHAIN_PARAMS="arm64-v8a-android-toolchain.params"
 PREFIX="/usr/local"
 BUILD_DIR="build"
 ENABLE_SHARED=1
+DEPS_ONLY=0
 
 # Parse command-line arguments
 show_help() {
@@ -31,6 +32,7 @@ Configuration Options:
   --build-dir=DIR           Build directory (default: build)
   --enable-static           Build static libraries (.a) instead of shared (.so)
   --enable-shared           Build shared libraries (.so) - default
+  --deps-only               Build only dependencies, skip Ruby itself
   --help                    Display this help message
 
 Examples:
@@ -76,6 +78,10 @@ while [ $# -gt 0 ]; do
 			;;
 		--enable-shared)
 			ENABLE_SHARED=1
+			shift
+			;;
+		--deps-only)
+			DEPS_ONLY=1
 			shift
 			;;
 		--help|-h)
@@ -196,6 +202,9 @@ if [ $ENABLE_SHARED -eq 1 ]; then
 else
 	echo "Build mode: Static libraries (.a)"
 fi
+if [ $DEPS_ONLY -eq 1 ]; then
+	echo "Dependencies only: yes (Ruby will be skipped)"
+fi
 
 # Generate Makefile
 echo "Generating Makefile..."
@@ -214,6 +223,7 @@ PREFIX=@PREFIX@
 BUILD_DIR=@BUILD_DIR@
 ROOT_DIR=@ROOT_DIR@
 ENABLE_SHARED=@ENABLE_SHARED@
+DEPS_ONLY=@DEPS_ONLY@
 PROJECT_NAME=ruby-for-android
 CONTAINER=$(PROJECT_NAME)_dev
 DOCKER_WORKDIR=/opt/current
@@ -328,6 +338,12 @@ configure-cmake: docker-init
 			CMAKE_ENABLE_SHARED=OFF; \
 			echo "Build mode: Static libraries"; \
 		fi && \
+		if [ $(DEPS_ONLY) -eq 1 ]; then \
+			CMAKE_DEPS_ONLY=ON; \
+			echo "Dependencies only: yes (Ruby will be skipped)"; \
+		else \
+			CMAKE_DEPS_ONLY=OFF; \
+		fi && \
 		rm -f CMakeCache.txt && \
 		if grep -q "DANDROID_ABI=" "$$TOOLCHAIN_PARAMS_FILE"; then \
 			NDK_BASE=/home/$$USER/Android/Sdk/ndk && \
@@ -340,10 +356,12 @@ configure-cmake: docker-init
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DCMAKE_TOOLCHAIN_FILE=$$ANDROID_NDK/build/cmake/android.toolchain.cmake \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
+				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
 				$$SOURCE_DIR; \
 		else \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
+				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
 				$$SOURCE_DIR; \
 		fi'
 
@@ -443,6 +461,12 @@ configure-cmake:
 			CMAKE_ENABLE_SHARED=OFF; \
 			echo "Build mode: Static libraries"; \
 		fi && \
+		if [ $(DEPS_ONLY) -eq 1 ]; then \
+			CMAKE_DEPS_ONLY=ON; \
+			echo "Dependencies only: yes (Ruby will be skipped)"; \
+		else \
+			CMAKE_DEPS_ONLY=OFF; \
+		fi && \
 		rm -f CMakeCache.txt && \
 		if grep -q "DANDROID_ABI=" "$$TOOLCHAIN_PARAMS_FILE"; then \
 			NDK_BASE=$$HOME/Android/Sdk/ndk && \
@@ -455,10 +479,12 @@ configure-cmake:
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DCMAKE_TOOLCHAIN_FILE=$$ANDROID_NDK/build/cmake/android.toolchain.cmake \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
+				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
 				..; \
 		else \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
+				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
 				..; \
 		fi
 
@@ -643,6 +669,7 @@ sed \
 	-e "s|@BUILD_DIR@|$BUILD_DIR|g" \
 	-e "s|@ROOT_DIR@|$ROOT_DIR|g" \
 	-e "s|@ENABLE_SHARED@|$ENABLE_SHARED|g" \
+	-e "s|@DEPS_ONLY@|$DEPS_ONLY|g" \
 	"$ROOT_DIR/Makefile" > "$ROOT_DIR/Makefile.new"
 
 # Insert package clean and log targets
