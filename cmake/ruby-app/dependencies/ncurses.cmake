@@ -31,13 +31,15 @@ else()
     set(NCURSES_BUILD_CC "gcc")
 endif()
 
-    # iOS SDK doesn't have sys/ttydev.h (exists on macOS but not iOS).
-    # Since the host triplet looks like macOS (aarch64-apple-darwin),
-    # autoconf's cross-compile guess wrongly assumes the header exists.
+    # iOS: the host triplet aarch64-apple-darwin defines __APPLE__, which
+    # makes ncurses assume ospeed is 'short' (NCURSES_OSPEED_COMPAT=1).
+    # That triggers #include <sys/ttydev.h> in lib_baudrate.c, but the
+    # iOS SDK doesn't ship that header. --with-ospeed=unsigned sets
+    # NCURSES_OSPEED_COMPAT=0, skipping the problematic include entirely.
     set(NCURSES_PLATFORM_CONFIGURE_ARGS "")
     if(TARGET_PLATFORM STREQUAL "iOS")
         set(NCURSES_PLATFORM_CONFIGURE_ARGS
-            ac_cv_header_sys_ttydev_h=no
+            --with-ospeed=unsigned
         )
     endif()
 
