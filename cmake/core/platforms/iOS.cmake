@@ -114,6 +114,9 @@ set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/lib")
 set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/local/lib")
 
 # Set environment variables for autoconf-based builds
+# CC_FOR_BUILD is needed by autoconf projects (e.g. GMP) that compile and run
+# test programs on the host during ./configure.  Without it the iOS cross-compiler
+# is used, which links against the iOS SDK and fails with "library 'System' not found".
 set(BUILD_ENV
     CC=${CROSS_CC}
     CXX=${CROSS_CXX}
@@ -121,6 +124,7 @@ set(BUILD_ENV
     RANLIB=${CROSS_RANLIB}
     STRIP=${CROSS_STRIP}
     LD=${CROSS_LD}
+    CC_FOR_BUILD=/usr/bin/clang
     CFLAGS=${CFLAGS}
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
