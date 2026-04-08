@@ -69,6 +69,28 @@ if(TARGET_PLATFORM STREQUAL "Android")
     endforeach()
 endif()
 
+# iOS-specific required variables
+if(TARGET_PLATFORM STREQUAL "iOS")
+    set(IOS_REQUIRED
+        CMAKE_OSX_SYSROOT
+    )
+
+    foreach(VAR ${IOS_REQUIRED})
+        if(NOT DEFINED ${VAR})
+            list(APPEND MISSING_VARIABLES ${VAR})
+            set(VALIDATION_FAILED TRUE)
+            message(SEND_ERROR "REQUIRED iOS variable not set: ${VAR}")
+        else()
+            message(STATUS "  ${VAR}: ${${VAR}}")
+        endif()
+    endforeach()
+
+    # Verify static build mode for iOS (required for App Store)
+    if(BUILD_SHARED_LIBS)
+        message(WARNING "iOS builds require static libraries (BUILD_SHARED_LIBS should be OFF). iOS.cmake will force this.")
+    endif()
+endif()
+
 # Validate that build directories exist
 if(NOT EXISTS "${BUILD_DOWNLOAD_DIR}")
     message(SEND_ERROR "Download directory does not exist: ${BUILD_DOWNLOAD_DIR}")

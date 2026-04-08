@@ -140,6 +140,51 @@ else
 
 		echo "Android NDK: $ANDROID_NDK"
 	fi
+
+	# Check for iOS build
+	if grep -q "DIOS=TRUE" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
+		echo "Error: iOS builds require macOS host with Xcode (cannot use Docker mode)"
+		echo "Use --without-docker flag for iOS builds"
+		exit 1
+	fi
+fi
+
+# Check for iOS build (local mode)
+if [ $USE_DOCKER -eq 0 ] && grep -q "DIOS=TRUE" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
+	# Verify we're on macOS
+	if [ "$(uname)" != "Darwin" ]; then
+		echo "Error: iOS builds require macOS (detected: $(uname))"
+		exit 1
+	fi
+
+	# Verify Xcode toolchain is available
+	if ! command -v xcrun >/dev/null 2>&1; then
+		echo "Error: xcrun not found. Install Xcode Command Line Tools."
+		exit 1
+	fi
+
+	# Verify the requested SDK is available
+	if grep -q "DCMAKE_OSX_SYSROOT=iphoneos" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
+		if ! xcrun --sdk iphoneos --show-sdk-path >/dev/null 2>&1; then
+			echo "Error: iPhone OS SDK not found. Install Xcode with iOS SDK."
+			exit 1
+		fi
+		echo "iOS SDK: $(xcrun --sdk iphoneos --show-sdk-path)"
+	elif grep -q "DCMAKE_OSX_SYSROOT=iphonesimulator" "$ROOT_DIR/$TOOLCHAIN_PARAMS"; then
+		if ! xcrun --sdk iphonesimulator --show-sdk-path >/dev/null 2>&1; then
+			echo "Error: iPhone Simulator SDK not found. Install Xcode with iOS SDK."
+			exit 1
+		fi
+		echo "iOS Simulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-path)"
+	fi
+
+	# iOS requires static libraries
+	if [ $ENABLE_SHARED -eq 1 ]; then
+		echo "Note: iOS requires static libraries. Forcing --enable-static."
+		ENABLE_SHARED=0
+	fi
+
+	echo "Platform: iOS (cross-compilation)"
 fi
 
 echo "Toolchain: $TOOLCHAIN_PARAMS"

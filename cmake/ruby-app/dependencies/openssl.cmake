@@ -31,10 +31,12 @@ elseif(TARGET_PLATFORM STREQUAL "iOS")
     if(RUBY_IOS_PLATFORM STREQUAL "device")
         set(OPENSSL_CONFIGURE_CMD
             ./Configure ios64-xcrun ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
+                --prefix=/usr/local
         )
     else()
         set(OPENSSL_CONFIGURE_CMD
             ./Configure iossimulator-xcrun ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
+                --prefix=/usr/local
         )
     endif()
 elseif(TARGET_PLATFORM STREQUAL "macOS")

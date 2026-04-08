@@ -23,11 +23,19 @@ else()
     )
 endif()
 
+# Detect build (host) CC for ncurses cross-compilation
+# macOS/iOS builds run on macOS hosts which only have clang via Xcode
+if(CMAKE_HOST_APPLE)
+    set(NCURSES_BUILD_CC "clang")
+else()
+    set(NCURSES_BUILD_CC "gcc")
+endif()
+
     set(NCURSES_CONFIGURE_CMD
         ./configure
         --host=${HOST_TRIPLET}
         --target=${HOST_TRIPLET}
-        --with-build-cc=gcc
+        --with-build-cc=${NCURSES_BUILD_CC}
         --enable-term-driver
         --enable-sp-funcs
         ${NCURSES_CONFIGURE_LIB_TYPE}
