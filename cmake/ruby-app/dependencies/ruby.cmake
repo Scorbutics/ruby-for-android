@@ -78,6 +78,12 @@ if(TARGET_PLATFORM STREQUAL "Android")
     set(RUBY_ENV_VARS "DLDFLAGS=${LDFLAGS}")
 endif()
 
+# iOS cross-compilation: override autoconf header checks that incorrectly
+# detect macOS-only headers from the host system instead of the iOS SDK
+if(TARGET_PLATFORM STREQUAL "iOS")
+    list(APPEND RUBY_CONFIGURE_CMD ac_cv_header_sys_vnode_h=no)
+endif()
+
 add_external_dependency(
     NAME ruby
     VERSION ${RUBY_VERSION}
