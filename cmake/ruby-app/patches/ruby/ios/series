@@ -1,0 +1,6 @@
+# Patch series for Ruby on iOS
+# Patches are applied in order listed here
+
+# sys/vnode.h is macOS-only (not in iOS SDK) but dir.c includes it
+# unconditionally under #ifdef __APPLE__
+fix-sys-vnode-ios.patch

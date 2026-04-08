@@ -78,12 +78,6 @@ if(TARGET_PLATFORM STREQUAL "Android")
     set(RUBY_ENV_VARS "DLDFLAGS=${LDFLAGS}")
 endif()
 
-# iOS cross-compilation: override autoconf header checks that incorrectly
-# guess "yes" for macOS-only headers when cross-compiling for iOS.
-# These must be environment variables so cmake -E env sets them before configure runs.
-if(TARGET_PLATFORM STREQUAL "iOS")
-    list(APPEND RUBY_ENV_VARS "ac_cv_header_sys_vnode_h=no")
-endif()
 
 add_external_dependency(
     NAME ruby

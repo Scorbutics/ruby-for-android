@@ -1,0 +1,15 @@
+--- a/dir.c
++++ b/dir.c
+@@ -96,8 +96,11 @@
+ #ifdef __APPLE__
+ # define NORMALIZE_UTF8PATH 1
++# include <TargetConditionals.h>
+ # include <sys/param.h>
+ # include <sys/mount.h>
+-# include <sys/vnode.h>
++# if !defined(TARGET_OS_IPHONE) || !TARGET_OS_IPHONE
++#  include <sys/vnode.h>
++# endif
+ #else
+ # define NORMALIZE_UTF8PATH 0
+ #endif
