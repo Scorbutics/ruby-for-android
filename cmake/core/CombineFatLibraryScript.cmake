@@ -37,6 +37,21 @@ endif()
 string(REPLACE ";" "\\;" LIBS_LIST "${COMBINE_LIBS}")
 set(LIBS_LIST "${COMBINE_LIBS}")
 
+# Filter out libraries that don't exist at build time
+# This handles platform differences (e.g., Android doesn't have libcrypt.a)
+set(EXISTING_LIBS)
+foreach(lib ${LIBS_LIST})
+    if(EXISTS "${lib}")
+        list(APPEND EXISTING_LIBS "${lib}")
+    else()
+        message(STATUS "Skipping non-existent library: ${lib}")
+    endif()
+endforeach()
+
+if(NOT EXISTING_LIBS)
+    message(FATAL_ERROR "No libraries found to combine. Check that dependencies were built successfully.")
+endif()
+
 # Optional parameters
 if(NOT DEFINED COMBINE_WORKDIR)
     set(COMBINE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/fat_library_workdir")
@@ -46,5 +61,5 @@ endif()
 combine_fat_library(
     OUTPUT ${COMBINE_OUTPUT}
     WORKDIR ${COMBINE_WORKDIR}
-    LIBS ${LIBS_LIST}
+    LIBS ${EXISTING_LIBS}
 )
