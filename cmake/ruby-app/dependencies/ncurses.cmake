@@ -42,6 +42,7 @@ endif()
             --with-ospeed=unsigned
             --without-progs
             --without-tests
+            --disable-database
         )
     endif()
 
