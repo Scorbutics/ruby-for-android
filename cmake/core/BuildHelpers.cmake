@@ -110,8 +110,13 @@ function(add_external_dependency)
             set(PATCH_BASE_DIR "${APP_DIR}/patches/${DEP_NAME}")
         endif()
 
+        if(NOT PATCH_BASE_DIR)
+            message(STATUS "  No patch directory found for ${DEP_NAME} (APP_DIR=${APP_DIR})")
+        endif()
         if(PATCH_BASE_DIR)
-            
+            message(STATUS "  Patch base dir: ${PATCH_BASE_DIR}")
+            message(STATUS "  Looking for patches: library=${DEP_NAME} version=${DEP_VERSION} platform=${PLATFORM_LOWER}")
+
             # Get the list of patches to apply
             get_platform_patches(
                 LIBRARY ${DEP_NAME}
@@ -120,6 +125,8 @@ function(add_external_dependency)
                 PATCH_BASE "${PATCH_BASE_DIR}/.."
                 OUTPUT_VAR PATCH_LIST
             )
+
+            message(STATUS "  Found patches: ${PATCH_LIST}")
 
             # Build command list from patches
             if(PATCH_LIST)
@@ -241,9 +248,17 @@ function(get_platform_patches)
         "${PATCH_BASE}/common"
     )
 
+    message(STATUS "  Patch base: ${PATCH_BASE}")
+    message(STATUS "  Patch search paths: ${PATCH_SEARCH_PATHS}")
+
     set(COLLECTED_PATCHES "")
 
     foreach(SEARCH_PATH ${PATCH_SEARCH_PATHS})
+        if(EXISTS "${SEARCH_PATH}")
+            message(STATUS "  [EXISTS] ${SEARCH_PATH}")
+        else()
+            message(STATUS "  [MISSING] ${SEARCH_PATH}")
+        endif()
         if(EXISTS "${SEARCH_PATH}/series")
             # Read patch series file
             file(STRINGS "${SEARCH_PATH}/series" PATCH_LIST)
