@@ -78,13 +78,19 @@ if(TARGET_PLATFORM STREQUAL "Android")
     set(RUBY_ENV_VARS "DLDFLAGS=${LDFLAGS}")
 endif()
 
-# iOS: disable getattrlist/fgetattrlist detection. These APIs exist on iOS but
-# depend on vnode constants (VREG, VDIR, VT_HFS, etc.) from <sys/vnode.h> which
-# is not in the iOS SDK. Ruby falls back to standard POSIX stat()/readdir().
+# iOS cross-compilation: autoconf cannot run test programs so it guesses
+# header/function availability, often incorrectly. Override the results:
+#  - getattrlist/fgetattrlist: exist on iOS but depend on vnode constants
+#    (VREG, VDIR, VT_HFS) from <sys/vnode.h> which is not in the iOS SDK.
+#    Ruby falls back to standard POSIX stat()/readdir().
+#  - sys/random.h: exists on iOS and declares getentropy(), but autoconf
+#    fails to detect it during cross-compilation, causing an implicit
+#    function declaration error.
 if(TARGET_PLATFORM STREQUAL "iOS")
     list(APPEND RUBY_CONFIGURE_CMD
         ac_cv_func_getattrlist=no
         ac_cv_func_fgetattrlist=no
+        ac_cv_header_sys_random_h=yes
     )
 endif()
 
