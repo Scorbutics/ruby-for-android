@@ -107,6 +107,11 @@ endif()
 set(CXXFLAGS "${CFLAGS}")
 set(CPPFLAGS "${CFLAGS}")
 
+# Assembly flags: Ruby compiles coroutine .S files with ASFLAGS (not CFLAGS).
+# Without the sysroot/arch/min-version, the assembler produces macOS-tagged objects
+# that the linker rejects when building for iOS.
+set(ASFLAGS "-isysroot ${IOS_SDK_PATH} -arch ${IOS_ARCH} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+
 set(LDFLAGS "-isysroot ${IOS_SDK_PATH}")
 set(LDFLAGS "${LDFLAGS} -arch ${IOS_ARCH}")
 set(LDFLAGS "${LDFLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
@@ -128,6 +133,7 @@ set(BUILD_ENV
     CFLAGS_FOR_BUILD=
     CPPFLAGS_FOR_BUILD=
     LDFLAGS_FOR_BUILD=
+    ASFLAGS=${ASFLAGS}
     CFLAGS=${CFLAGS}
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
