@@ -79,9 +79,10 @@ if(TARGET_PLATFORM STREQUAL "Android")
 endif()
 
 # iOS cross-compilation: override autoconf header checks that incorrectly
-# detect macOS-only headers from the host system instead of the iOS SDK
+# guess "yes" for macOS-only headers when cross-compiling for iOS.
+# These must be environment variables so cmake -E env sets them before configure runs.
 if(TARGET_PLATFORM STREQUAL "iOS")
-    list(APPEND RUBY_CONFIGURE_CMD ac_cv_header_sys_vnode_h=no)
+    list(APPEND RUBY_ENV_VARS "ac_cv_header_sys_vnode_h=no")
 endif()
 
 add_external_dependency(
