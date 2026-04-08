@@ -40,6 +40,7 @@ endif()
     if(TARGET_PLATFORM STREQUAL "iOS")
         set(NCURSES_PLATFORM_CONFIGURE_ARGS
             --with-ospeed=unsigned
+            --without-progs
         )
     endif()
 
