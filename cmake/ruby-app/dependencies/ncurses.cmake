@@ -42,8 +42,11 @@ endif()
             --with-ospeed=unsigned
             --without-progs
             --without-tests
-            --disable-database
-            --with-fallbacks=vt100,vt102,xterm,xterm-256color
+        )
+        # Install only libs and headers — skip terminfo data (install.data)
+        # which fails because tic can't write the compiled database entries.
+        set(NCURSES_INSTALL_CMD
+            make install.libs install.includes DESTDIR=${BUILD_STAGING_DIR}
         )
     endif()
 
@@ -63,11 +66,23 @@ endif()
 # Build ncurses dependency
 # Note: ncurses requires CPPFLAGS=-P for proper preprocessing
 # We need to append it to the existing CPPFLAGS from RUBY_BUILD_ENV
-add_external_dependency(
-    NAME ncurses
-    VERSION ${NCURSES_VERSION}
-    URL ${NCURSES_URL}
-    URL_HASH ${NCURSES_HASH}
-    CONFIGURE_COMMAND ${NCURSES_CONFIGURE_CMD}
-    ENV_VARS "CPPFLAGS=${CPPFLAGS} -P"
-)
+if(NCURSES_INSTALL_CMD)
+    add_external_dependency(
+        NAME ncurses
+        VERSION ${NCURSES_VERSION}
+        URL ${NCURSES_URL}
+        URL_HASH ${NCURSES_HASH}
+        CONFIGURE_COMMAND ${NCURSES_CONFIGURE_CMD}
+        INSTALL_COMMAND ${NCURSES_INSTALL_CMD}
+        ENV_VARS "CPPFLAGS=${CPPFLAGS} -P"
+    )
+else()
+    add_external_dependency(
+        NAME ncurses
+        VERSION ${NCURSES_VERSION}
+        URL ${NCURSES_URL}
+        URL_HASH ${NCURSES_HASH}
+        CONFIGURE_COMMAND ${NCURSES_CONFIGURE_CMD}
+        ENV_VARS "CPPFLAGS=${CPPFLAGS} -P"
+    )
+endif()
