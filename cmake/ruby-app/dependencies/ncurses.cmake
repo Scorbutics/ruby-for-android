@@ -41,6 +41,7 @@ endif()
         set(NCURSES_PLATFORM_CONFIGURE_ARGS
             --with-ospeed=unsigned
             --without-progs
+            --without-tests
         )
     endif()
 
