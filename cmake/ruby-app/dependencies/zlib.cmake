@@ -2,7 +2,7 @@
 # Configuration for zlib compression library
 
 set(ZLIB_VERSION "1.3.2")
-set(ZLIB_URL "https://zlib.net/zlib-${ZLIB_VERSION}.tar.gz")
+set(ZLIB_URL "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz")
 set(ZLIB_HASH "SHA256=bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16")
 
 # Configure command (autoconf-based)
