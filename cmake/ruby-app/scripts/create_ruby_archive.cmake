@@ -41,21 +41,26 @@ file(MAKE_DIRECTORY "${ARCHIVE_STAGING_DIR}")
 # Step 1: Detect RUBY_PLATFORM_LOWER from config.h
 set(CONFIG_H_PATH "${BUILD_STAGING_DIR}/usr/local/include/ruby-${RUBY_ABI_VERSION}")
 
-# Find the platform-specific directory
-# Try matching by platform name first (e.g., *-android*, *-linux*),
-# then fall back to host triplet (e.g., aarch64-apple-darwin for iOS)
+# Find the platform-specific directory (contains ruby/config.h)
+# Ruby names this after its own platform string which varies:
+#   Android: aarch64-linux-android, Linux: x86_64-linux-gnu, iOS: arm64-darwin
+# Try several patterns, then fall back to any directory containing ruby/config.h
 file(GLOB PLATFORM_DIRS "${CONFIG_H_PATH}/*-${PLATFORM_LOWER}*")
 if(NOT PLATFORM_DIRS)
     file(GLOB PLATFORM_DIRS "${CONFIG_H_PATH}/${HOST_TRIPLET}*")
 endif()
 if(NOT PLATFORM_DIRS)
-    # List what actually exists for diagnostics
-    file(GLOB ALL_DIRS "${CONFIG_H_PATH}/*")
-    message(STATUS "  Contents of ${CONFIG_H_PATH}:")
-    foreach(D ${ALL_DIRS})
-        message(STATUS "    ${D}")
+    # Fallback: find directory containing ruby/config.h
+    file(GLOB CANDIDATE_DIRS "${CONFIG_H_PATH}/*")
+    foreach(DIR ${CANDIDATE_DIRS})
+        if(IS_DIRECTORY "${DIR}" AND EXISTS "${DIR}/ruby/config.h")
+            list(APPEND PLATFORM_DIRS "${DIR}")
+        endif()
     endforeach()
-    message(FATAL_ERROR "Could not find platform-specific include directory in ${CONFIG_H_PATH} (tried *-${PLATFORM_LOWER}* and ${HOST_TRIPLET}*)")
+endif()
+if(NOT PLATFORM_DIRS)
+    file(GLOB ALL_CONTENTS "${CONFIG_H_PATH}/*")
+    message(FATAL_ERROR "Could not find platform-specific include directory in ${CONFIG_H_PATH}. Contents: ${ALL_CONTENTS}")
 endif()
 
 # Get the first match (should only be one)
