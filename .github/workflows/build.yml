@@ -1,0 +1,206 @@
+name: Build Ruby Libraries
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Create a GitHub release with the built artifacts"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Android ARM64
+          - platform: android-arm64
+            triplet: aarch64-linux-android
+            runner: ubuntu-latest
+            use_docker: true
+            toolchain: arm64-v8a-android-toolchain.params
+            build_type: shared
+
+          # Android x86_64
+          - platform: android-x86_64
+            triplet: x86_64-linux-android
+            runner: ubuntu-latest
+            use_docker: true
+            toolchain: x86_64-android-toolchain.params
+            build_type: shared
+
+          # Linux x86_64 (glibc)
+          - platform: linux-x86_64
+            triplet: x86_64-linux-gnu
+            runner: ubuntu-latest
+            use_docker: false
+            toolchain: x86_64-linux-toolchain.params
+            build_type: shared
+
+          # iOS device (arm64)
+          - platform: ios-device
+            triplet: aarch64-apple-ios-device
+            runner: macos-14
+            use_docker: false
+            toolchain: arm64-ios-device-toolchain.params
+            build_type: static
+
+          # iOS simulator (arm64)
+          - platform: ios-simulator
+            triplet: aarch64-apple-ios-simulator
+            runner: macos-14
+            use_docker: false
+            toolchain: arm64-ios-simulator-toolchain.params
+            build_type: static
+
+    runs-on: ${{ matrix.runner }}
+    name: Build ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- iOS toolchain params generation ---
+      - name: Create iOS toolchain params
+        if: startsWith(matrix.platform, 'ios-')
+        run: |
+          if [ "${{ matrix.platform }}" = "ios-device" ]; then
+            echo "-DIOS=TRUE -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=arm64" \
+              > ${{ matrix.toolchain }}
+          elif [ "${{ matrix.platform }}" = "ios-simulator" ]; then
+            echo "-DIOS=TRUE -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=arm64" \
+              > ${{ matrix.toolchain }}
+          fi
+          echo "Toolchain params:"
+          cat ${{ matrix.toolchain }}
+
+      # --- Install build dependencies (non-Docker) ---
+      - name: Install build dependencies (Linux)
+        if: "!matrix.use_docker && runner.os == 'Linux'"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ruby-dev ninja-build \
+            libtool autoconf automake libncurses-dev \
+            zip unzip wget gettext patch
+
+      - name: Install build dependencies (macOS)
+        if: "!matrix.use_docker && runner.os == 'macOS'"
+        run: |
+          brew install autoconf automake libtool cmake
+
+      # --- Configure ---
+      - name: Configure (Docker)
+        if: matrix.use_docker
+        run: |
+          STATIC_FLAG=""
+          if [ "${{ matrix.build_type }}" = "static" ]; then
+            STATIC_FLAG="--enable-static"
+          fi
+          ./configure \
+            --with-toolchain-params=${{ matrix.toolchain }} \
+            --build-dir=build-${{ matrix.platform }} \
+            $STATIC_FLAG
+
+      - name: Configure (local)
+        if: "!matrix.use_docker"
+        run: |
+          STATIC_FLAG=""
+          if [ "${{ matrix.build_type }}" = "static" ]; then
+            STATIC_FLAG="--enable-static"
+          fi
+          ./configure \
+            --without-docker \
+            --with-toolchain-params=${{ matrix.toolchain }} \
+            --build-dir=build-${{ matrix.platform }} \
+            $STATIC_FLAG
+
+      # --- Build ---
+      - name: Build
+        run: make build
+
+      - name: Show ExternalProject logs on failure
+        if: failure()
+        run: |
+          echo "=== ExternalProject error logs ==="
+          find build-${{ matrix.platform }} -name '*-err.log' -type f -size +0 | sort | while read -r log; do
+            echo ""
+            echo ">>> $log <<<"
+            cat "$log"
+          done
+
+      # --- Install (produces ZIP) ---
+      - name: Install
+        run: make install
+
+      - name: List artifacts
+        run: |
+          echo "=== Build artifacts ==="
+          ls -lh target/
+
+      # --- Upload ---
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ruby-libs-${{ matrix.platform }}
+          path: target/ruby_full-*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Create GitHub Release (on tag push or manual trigger)
+  # ---------------------------------------------------------------------------
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+    runs-on: ubuntu-latest
+    name: Create Release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Collect release assets
+        run: |
+          mkdir -p release
+          find artifacts/ -name '*.zip' -exec cp {} release/ \;
+          echo "=== Release assets ==="
+          ls -lh release/
+
+      - name: Determine release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v$(date +%Y%m%d)-manual" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Ruby Libraries ${{ steps.tag.outputs.tag }}
+          body: |
+            Prebuilt Ruby 3.1.1 libraries for all supported platforms.
+
+            ## Platforms
+            - `android-arm64` — Android ARM64 (shared)
+            - `android-x86_64` — Android x86_64 (shared)
+            - `linux-x86_64` — Linux x86_64 glibc (shared)
+            - `ios-device` — iOS device ARM64 (static)
+            - `ios-simulator` — iOS simulator ARM64 (static)
+
+            ## Usage
+            Download the ZIP for your target platform and extract into your project's `external/` directory.
+          files: release/*
+          draft: false
+          prerelease: false
