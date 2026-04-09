@@ -53,16 +53,23 @@ set(LIB_FLAGS
 
 # --- Static libraries in link order ---
 # Ruby core first, then extensions, then dependencies (deepest deps last)
-# Ruby names the static lib libruby-static.a on Linux/Android, but may use
-# libruby.a on macOS/iOS. Detect whichever exists.
-if(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby-static.a")
-    set(LIBS -lruby-static)
-elseif(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby.a")
-    set(LIBS -lruby)
-else()
+# Ruby names the static lib differently per platform:
+#   Linux/Android: libruby-static.a
+#   iOS/macOS:     libruby.3.1-static.a (or similar versioned name)
+# Use a glob to find whichever variant exists.
+file(GLOB _ruby_static_candidates
+    "${BUILD_STAGING_DIR}/usr/local/lib/libruby*-static.a"
+    "${BUILD_STAGING_DIR}/usr/local/lib/libruby.a"
+)
+# Filter out libruby-ext.a
+list(FILTER _ruby_static_candidates EXCLUDE REGEX "libruby-ext")
+if(NOT _ruby_static_candidates)
     file(GLOB _ruby_libs "${BUILD_STAGING_DIR}/usr/local/lib/libruby*")
     message(FATAL_ERROR "No Ruby static library found in ${BUILD_STAGING_DIR}/usr/local/lib/\nFound: ${_ruby_libs}")
 endif()
+list(GET _ruby_static_candidates 0 RUBY_STATIC_LIB)
+message(STATUS "Link test: using Ruby library: ${RUBY_STATIC_LIB}")
+set(LIBS "${RUBY_STATIC_LIB}")
 if(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby-ext.a")
     list(APPEND LIBS -lruby-ext)
 endif()
