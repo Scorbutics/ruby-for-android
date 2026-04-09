@@ -26,7 +26,7 @@ message(STATUS "iOS SDK: ${IOS_SDK_NAME}")
 if(CMAKE_OSX_DEPLOYMENT_TARGET)
     set(IOS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
 else()
-    set(IOS_DEPLOYMENT_TARGET "12.0")  # Default to iOS 12
+    set(IOS_DEPLOYMENT_TARGET "13.0")  # Default to iOS 13
 endif()
 message(STATUS "iOS Deployment Target: ${IOS_DEPLOYMENT_TARGET}")
 
