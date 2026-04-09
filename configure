@@ -344,7 +344,9 @@ configure-cmake: docker-init
 		else \
 			CMAKE_DEPS_ONLY=OFF; \
 		fi && \
-		rm -f CMakeCache.txt && \
+		if [ -f CMakeCache.txt ]; then \
+			echo "CMakeCache.txt already exists, reconfiguring in-place..."; \
+		fi && \
 		if grep -q "DANDROID_ABI=" "$$TOOLCHAIN_PARAMS_FILE"; then \
 			NDK_BASE=/home/$$USER/Android/Sdk/ndk && \
 			export ANDROID_NDK=$${ANDROID_NDK:-$$NDK_BASE/$$(ls $$NDK_BASE | tail -n 1)} && \
@@ -467,7 +469,9 @@ configure-cmake:
 		else \
 			CMAKE_DEPS_ONLY=OFF; \
 		fi && \
-		rm -f CMakeCache.txt && \
+		if [ -f CMakeCache.txt ]; then \
+			echo "CMakeCache.txt already exists, reconfiguring in-place..."; \
+		fi && \
 		if grep -q "DANDROID_ABI=" "$$TOOLCHAIN_PARAMS_FILE"; then \
 			NDK_BASE=$$HOME/Android/Sdk/ndk && \
 			export ANDROID_NDK=$${ANDROID_NDK:-$$NDK_BASE/$$(ls $$NDK_BASE | tail -n 1)} && \
