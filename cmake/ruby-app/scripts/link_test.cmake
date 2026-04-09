@@ -2,21 +2,21 @@
 # Compile and link a minimal C program against the built Ruby static libraries.
 # This validates that no symbols are missing from the cross-compiled output.
 #
-# Required variables (passed via -D):
-#   BUILD_STAGING_DIR   - Staging directory with installed libraries
-#   RUBY_ABI_VERSION    - Ruby ABI version (e.g., 3.1.0)
-#   CROSS_CC            - Cross-compiler command (may contain flags, e.g. "clang -target ...")
-#   CFLAGS              - Compiler flags
-#   LDFLAGS             - Linker flags
-#   TARGET_PLATFORM     - Platform name (Linux, Android, iOS)
-#   LINK_TEST_SRC       - Path to test source file
-#   LINK_TEST_BIN       - Output binary path
+# Required: LINK_TEST_CONFIG - path to a .cmake file that sets:
+#   BUILD_STAGING_DIR, RUBY_ABI_VERSION, CROSS_CC, CFLAGS, LDFLAGS,
+#   TARGET_PLATFORM, LINK_TEST_SRC, LINK_TEST_BIN
 
 cmake_minimum_required(VERSION 3.10)
 
+# Load configuration (avoids space-in-value issues with -D arguments)
+if(NOT DEFINED LINK_TEST_CONFIG)
+    message(FATAL_ERROR "link_test.cmake: LINK_TEST_CONFIG is required")
+endif()
+include("${LINK_TEST_CONFIG}")
+
 foreach(VAR BUILD_STAGING_DIR RUBY_ABI_VERSION CROSS_CC LINK_TEST_SRC LINK_TEST_BIN TARGET_PLATFORM)
     if(NOT DEFINED ${VAR})
-        message(FATAL_ERROR "link_test.cmake: ${VAR} is required")
+        message(FATAL_ERROR "link_test.cmake: ${VAR} is required (check config file)")
     endif()
 endforeach()
 
@@ -81,13 +81,13 @@ endif()
 separate_arguments(CC_CMD UNIX_COMMAND "${CROSS_CC}")
 
 # CFLAGS and LDFLAGS are also space-separated strings
-if(DEFINED CFLAGS)
+if(DEFINED CFLAGS AND NOT CFLAGS STREQUAL "")
     separate_arguments(CFLAG_LIST UNIX_COMMAND "${CFLAGS}")
 else()
     set(CFLAG_LIST "")
 endif()
 
-if(DEFINED LDFLAGS)
+if(DEFINED LDFLAGS AND NOT LDFLAGS STREQUAL "")
     separate_arguments(LDFLAG_LIST UNIX_COMMAND "${LDFLAGS}")
 else()
     set(LDFLAG_LIST "")
@@ -116,13 +116,17 @@ execute_process(
 )
 
 if(LINK_OUTPUT)
-    message(STATUS "${LINK_OUTPUT}")
+    message(STATUS "stdout: ${LINK_OUTPUT}")
+endif()
+if(LINK_ERROR)
+    message(STATUS "stderr: ${LINK_ERROR}")
 endif()
 
 if(NOT LINK_RESULT EQUAL 0)
     message(FATAL_ERROR
         "Link test FAILED! Missing symbols in the built libraries.\n"
-        "Compiler output:\n${LINK_ERROR}"
+        "Exit code: ${LINK_RESULT}\n"
+        "The command and its output are shown above."
     )
 endif()
 

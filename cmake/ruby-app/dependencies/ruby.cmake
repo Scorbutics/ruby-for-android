@@ -166,21 +166,29 @@ add_dependencies(ruby ruby_archive)
 # --- Link test target ---
 # Compile and link a minimal C program against the built static libraries
 # to verify no symbols are missing. Only for static builds.
+#
+# We write a config file because CROSS_CC, CFLAGS, and LDFLAGS contain spaces
+# that get mangled when passed via -D on a COMMAND line.
 if(NOT BUILD_SHARED_LIBS)
     set(LINK_TEST_SRC "${CMAKE_SOURCE_DIR}/cmake/ruby-app/tests/link_test.c")
     set(LINK_TEST_BIN "${CMAKE_BINARY_DIR}/link_test_${PLATFORM_LOWER}_${TARGET_ARCH}")
     set(LINK_TEST_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/ruby-app/scripts/link_test.cmake")
+    set(LINK_TEST_CONFIG "${CMAKE_BINARY_DIR}/link_test_config.cmake")
+
+    file(WRITE "${LINK_TEST_CONFIG}"
+        "set(BUILD_STAGING_DIR \"${BUILD_STAGING_DIR}\")\n"
+        "set(RUBY_ABI_VERSION \"${RUBY_ABI_VERSION}\")\n"
+        "set(CROSS_CC \"${CROSS_CC}\")\n"
+        "set(CFLAGS \"${CFLAGS}\")\n"
+        "set(LDFLAGS \"${LDFLAGS}\")\n"
+        "set(TARGET_PLATFORM \"${TARGET_PLATFORM}\")\n"
+        "set(LINK_TEST_SRC \"${LINK_TEST_SRC}\")\n"
+        "set(LINK_TEST_BIN \"${LINK_TEST_BIN}\")\n"
+    )
 
     add_custom_target(link_test
         COMMAND ${CMAKE_COMMAND}
-            -DBUILD_STAGING_DIR=${BUILD_STAGING_DIR}
-            -DRUBY_ABI_VERSION=${RUBY_ABI_VERSION}
-            -DCROSS_CC=${CROSS_CC}
-            -DCFLAGS=${CFLAGS}
-            -DLDFLAGS=${LDFLAGS}
-            -DTARGET_PLATFORM=${TARGET_PLATFORM}
-            -DLINK_TEST_SRC=${LINK_TEST_SRC}
-            -DLINK_TEST_BIN=${LINK_TEST_BIN}
+            -DLINK_TEST_CONFIG=${LINK_TEST_CONFIG}
             -P ${LINK_TEST_SCRIPT}
         DEPENDS ruby_archive
         COMMENT "Running link test: verifying no missing symbols"
