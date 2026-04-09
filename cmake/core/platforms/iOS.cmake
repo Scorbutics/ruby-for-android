@@ -169,6 +169,21 @@ set(DISABLE_INSTALL_DOC ON CACHE BOOL "Disable documentation installation")
 # Note: iOS requires static linking for App Store apps
 message(STATUS "iOS builds will use STATIC libraries (required for App Store - cannot be changed)")
 
+# Generate an iOS CMake toolchain file so that ExternalProject sub-builds
+# (which run their own CMake process) inherit the iOS cross-compilation settings
+# via -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}.
+set(_IOS_TOOLCHAIN_FILE "${CMAKE_BINARY_DIR}/ios-toolchain.cmake")
+file(WRITE "${_IOS_TOOLCHAIN_FILE}"
+"# Auto-generated iOS toolchain file
+set(CMAKE_SYSTEM_NAME iOS)
+set(CMAKE_OSX_SYSROOT \"${CMAKE_OSX_SYSROOT}\")
+set(CMAKE_OSX_ARCHITECTURES \"${IOS_ARCH}\")
+set(CMAKE_OSX_DEPLOYMENT_TARGET \"${IOS_DEPLOYMENT_TARGET}\")
+")
+set(CMAKE_TOOLCHAIN_FILE "${_IOS_TOOLCHAIN_FILE}" CACHE FILEPATH "iOS toolchain file" FORCE)
+set(CMAKE_TOOLCHAIN_FILE "${_IOS_TOOLCHAIN_FILE}" PARENT_SCOPE)
+message(STATUS "Generated iOS toolchain file: ${_IOS_TOOLCHAIN_FILE}")
+
 # Mark platform as initialized
 set(PLATFORM_INITIALIZED TRUE PARENT_SCOPE)
 
