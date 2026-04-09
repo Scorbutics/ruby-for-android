@@ -8,3 +8,7 @@ fix-sys-vnode-ios.patch
 # getentropy() exists on iOS but <sys/random.h> doesn't; provide
 # the declaration directly so random.c can use it
 fix-getentropy-ios.patch
+
+# mkmf can't cross-compile test programs for iOS, so readline 8.x
+# function detection fails; force-enable the modern names
+fix-readline-extconf-ios.patch
