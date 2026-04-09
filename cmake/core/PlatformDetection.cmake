@@ -32,16 +32,23 @@ endif()
 message(STATUS "Target platform: ${TARGET_PLATFORM}")
 
 # Detect target architecture
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+# For iOS cross-compilation, CMAKE_SYSTEM_PROCESSOR may not be set by CMake,
+# so fall back to CMAKE_OSX_ARCHITECTURES which is always provided via toolchain params.
+set(_DETECT_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+if(IOS AND (NOT _DETECT_ARCH OR _DETECT_ARCH STREQUAL "") AND CMAKE_OSX_ARCHITECTURES)
+    set(_DETECT_ARCH "${CMAKE_OSX_ARCHITECTURES}")
+endif()
+
+if(_DETECT_ARCH MATCHES "aarch64|arm64|ARM64")
     set(TARGET_ARCH "arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "armv7|armv7-a|armv7l")
+elseif(_DETECT_ARCH MATCHES "armv7|armv7-a|armv7l")
     set(TARGET_ARCH "armv7")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+elseif(_DETECT_ARCH MATCHES "x86_64|amd64|AMD64")
     set(TARGET_ARCH "x86_64")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i686|i386")
+elseif(_DETECT_ARCH MATCHES "i686|i386")
     set(TARGET_ARCH "x86")
 else()
-    set(TARGET_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+    set(TARGET_ARCH "${_DETECT_ARCH}")
 endif()
 
 # Android-specific detection
