@@ -86,10 +86,17 @@ execute_process(
 
 message(STATUS "iOS SDK Path: ${IOS_SDK_PATH}")
 
+# Set the correct min-version flag based on device vs simulator
+if(IOS_PLATFORM_TYPE STREQUAL "simulator")
+    set(IOS_MIN_VERSION_FLAG "-mios-simulator-version-min=${IOS_DEPLOYMENT_TARGET}")
+else()
+    set(IOS_MIN_VERSION_FLAG "-miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+endif()
+
 # Set compiler and linker flags
 set(CFLAGS "-isysroot ${IOS_SDK_PATH}")
 set(CFLAGS "${CFLAGS} -arch ${IOS_ARCH}")
-set(CFLAGS "${CFLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+set(CFLAGS "${CFLAGS} ${IOS_MIN_VERSION_FLAG}")
 set(CFLAGS "${CFLAGS} -I${BUILD_STAGING_DIR}/usr/include")
 set(CFLAGS "${CFLAGS} -I${BUILD_STAGING_DIR}/usr/local/include")
 set(CFLAGS "${CFLAGS} -O3 -DNDEBUG")
@@ -110,11 +117,11 @@ set(CPPFLAGS "${CFLAGS}")
 # Assembly flags: Ruby compiles coroutine .S files with ASFLAGS (not CFLAGS).
 # Without the sysroot/arch/min-version, the assembler produces macOS-tagged objects
 # that the linker rejects when building for iOS.
-set(ASFLAGS "-isysroot ${IOS_SDK_PATH} -arch ${IOS_ARCH} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+set(ASFLAGS "-isysroot ${IOS_SDK_PATH} -arch ${IOS_ARCH} ${IOS_MIN_VERSION_FLAG}")
 
 set(LDFLAGS "-isysroot ${IOS_SDK_PATH}")
 set(LDFLAGS "${LDFLAGS} -arch ${IOS_ARCH}")
-set(LDFLAGS "${LDFLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+set(LDFLAGS "${LDFLAGS} ${IOS_MIN_VERSION_FLAG}")
 set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/lib")
 set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/local/lib")
 
