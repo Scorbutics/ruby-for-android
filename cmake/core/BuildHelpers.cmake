@@ -199,6 +199,20 @@ function(add_external_dependency)
         DEPENDS             ${DEP_DEPENDS}
     )
 
+    # On Apple platforms (iOS/macOS), old autoconf+libtool bundles hardcode
+    # -force_cpusubtype_ALL into their link commands. Modern Xcode linkers
+    # (15+) no longer recognize this flag. Strip it from configure/ltmain.sh
+    # after patches are applied but before configure runs.
+    if(TARGET_PLATFORM STREQUAL "iOS" OR TARGET_PLATFORM STREQUAL "macOS")
+        ExternalProject_Add_Step(${DEP_NAME}_external strip_legacy_darwin_flags
+            COMMAND perl -pi -e "s/ -force_cpusubtype_ALL//g" configure ltmain.sh
+            DEPENDEES patch
+            DEPENDERS configure
+            WORKING_DIRECTORY ${SOURCE_DIR}
+            LOG TRUE
+        )
+    endif()
+
     # Create a target that depends on the external project
     add_custom_target(${DEP_NAME} DEPENDS ${DEP_NAME}_external)
 
