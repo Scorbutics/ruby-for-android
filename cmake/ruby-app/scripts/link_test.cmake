@@ -53,7 +53,16 @@ set(LIB_FLAGS
 
 # --- Static libraries in link order ---
 # Ruby core first, then extensions, then dependencies (deepest deps last)
-set(LIBS -lruby-static)
+# Ruby names the static lib libruby-static.a on Linux/Android, but may use
+# libruby.a on macOS/iOS. Detect whichever exists.
+if(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby-static.a")
+    set(LIBS -lruby-static)
+elseif(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby.a")
+    set(LIBS -lruby)
+else()
+    file(GLOB _ruby_libs "${BUILD_STAGING_DIR}/usr/local/lib/libruby*")
+    message(FATAL_ERROR "No Ruby static library found in ${BUILD_STAGING_DIR}/usr/local/lib/\nFound: ${_ruby_libs}")
+endif()
 if(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby-ext.a")
     list(APPEND LIBS -lruby-ext)
 endif()
