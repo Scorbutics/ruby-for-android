@@ -87,6 +87,10 @@ jobs:
             build-essential cmake ruby-dev ninja-build \
             libtool autoconf automake libncurses-dev \
             zip unzip wget gettext patch
+          # Remove system libffi-dev and libyaml-dev so Ruby's configure uses
+          # its bundled versions (ext/fiddle/libffi, ext/psych/yaml).
+          # This ensures the static symbols end up in libruby-ext.a.
+          sudo apt-get remove -y libffi-dev libyaml-dev 2>/dev/null || true
 
       - name: Install build dependencies (macOS)
         if: "!matrix.use_docker && runner.os == 'macOS'"
@@ -132,6 +136,15 @@ jobs:
             echo ">>> $log <<<"
             cat "$log"
           done
+
+      # --- Link test (verify no missing symbols) ---
+      - name: Link test
+        run: |
+          if [ "${{ matrix.use_docker }}" = "true" ]; then
+            docker exec ruby-for-android_dev cmake --build /opt/current/build --target link_test
+          else
+            cmake --build build-${{ matrix.platform }} --target link_test
+          fi
 
       # --- Install (produces ZIP) ---
       - name: Install
