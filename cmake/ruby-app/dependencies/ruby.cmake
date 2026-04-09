@@ -162,3 +162,27 @@ message(STATUS "Registered archive for export: ${RUBY_FULL_ARCHIVE_NAME}")
 # Make the ruby alias target include the archive
 # So 'make ruby' builds: ruby_external → ruby_archive → ruby
 add_dependencies(ruby ruby_archive)
+
+# --- Link test target ---
+# Compile and link a minimal C program against the built static libraries
+# to verify no symbols are missing. Only for static builds.
+if(NOT BUILD_SHARED_LIBS)
+    set(LINK_TEST_SRC "${CMAKE_SOURCE_DIR}/cmake/ruby-app/tests/link_test.c")
+    set(LINK_TEST_BIN "${CMAKE_BINARY_DIR}/link_test_${PLATFORM_LOWER}_${TARGET_ARCH}")
+    set(LINK_TEST_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/ruby-app/scripts/link_test.cmake")
+
+    add_custom_target(link_test
+        COMMAND ${CMAKE_COMMAND}
+            -DBUILD_STAGING_DIR=${BUILD_STAGING_DIR}
+            -DRUBY_ABI_VERSION=${RUBY_ABI_VERSION}
+            -DCROSS_CC=${CROSS_CC}
+            -DCFLAGS=${CFLAGS}
+            -DLDFLAGS=${LDFLAGS}
+            -DTARGET_PLATFORM=${TARGET_PLATFORM}
+            -DLINK_TEST_SRC=${LINK_TEST_SRC}
+            -DLINK_TEST_BIN=${LINK_TEST_BIN}
+            -P ${LINK_TEST_SCRIPT}
+        DEPENDS ruby_archive
+        COMMENT "Running link test: verifying no missing symbols"
+    )
+endif()
