@@ -180,6 +180,15 @@ set(CMAKE_OSX_SYSROOT \"${CMAKE_OSX_SYSROOT}\")
 set(CMAKE_OSX_ARCHITECTURES \"${IOS_ARCH}\")
 set(CMAKE_OSX_DEPLOYMENT_TARGET \"${IOS_DEPLOYMENT_TARGET}\")
 
+# Restrict find_package/find_library/find_path to the iOS SDK and our
+# staging directory so that host (macOS / Homebrew) libraries are never
+# picked up during cross-compilation.
+set(CMAKE_FIND_ROOT_PATH \"${IOS_SDK_PATH}\" \"${BUILD_STAGING_DIR}/usr/local\" \"${BUILD_STAGING_DIR}/usr\")
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
 # Provide find_host_package() so cross-compiled projects (e.g. SFML) can
 # locate host tools without searching inside the iOS sysroot.
 macro(find_host_package)
