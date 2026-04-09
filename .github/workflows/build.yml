@@ -23,7 +23,7 @@ jobs:
             runner: ubuntu-latest
             use_docker: true
             toolchain: arm64-v8a-android-toolchain.params
-            build_type: shared
+            build_type: static
 
           # Android x86_64
           - platform: android-x86_64
@@ -31,7 +31,7 @@ jobs:
             runner: ubuntu-latest
             use_docker: true
             toolchain: x86_64-android-toolchain.params
-            build_type: shared
+            build_type: static
 
           # Linux x86_64 (glibc)
           - platform: linux-x86_64
@@ -39,7 +39,7 @@ jobs:
             runner: ubuntu-latest
             use_docker: false
             toolchain: x86_64-linux-toolchain.params
-            build_type: shared
+            build_type: static
 
           # iOS device (arm64)
           - platform: ios-device
@@ -193,9 +193,9 @@ jobs:
             Prebuilt Ruby 3.1.1 libraries for all supported platforms.
 
             ## Platforms
-            - `android-arm64` — Android ARM64 (shared)
-            - `android-x86_64` — Android x86_64 (shared)
-            - `linux-x86_64` — Linux x86_64 glibc (shared)
+            - `android-arm64` — Android ARM64 (static)
+            - `android-x86_64` — Android x86_64 (static)
+            - `linux-x86_64` — Linux x86_64 glibc (static)
             - `ios-device` — iOS device ARM64 (static)
             - `ios-simulator` — iOS simulator ARM64 (static)
 
