@@ -42,7 +42,12 @@ file(MAKE_DIRECTORY "${ARCHIVE_STAGING_DIR}")
 set(CONFIG_H_PATH "${BUILD_STAGING_DIR}/usr/local/include/ruby-${RUBY_ABI_VERSION}")
 
 # Find the platform-specific directory
+# Try matching by platform name first (e.g., *-android*, *-linux*),
+# then fall back to host triplet (e.g., aarch64-apple-darwin for iOS)
 file(GLOB PLATFORM_DIRS "${CONFIG_H_PATH}/*-${PLATFORM_LOWER}*")
+if(NOT PLATFORM_DIRS)
+    file(GLOB PLATFORM_DIRS "${CONFIG_H_PATH}/${HOST_TRIPLET}*")
+endif()
 if(NOT PLATFORM_DIRS)
     message(FATAL_ERROR "Could not find platform-specific include directory in ${CONFIG_H_PATH}")
 endif()
