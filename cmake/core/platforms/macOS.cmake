@@ -66,6 +66,15 @@ endif()
 set(CXXFLAGS "${CFLAGS}")
 set(CPPFLAGS "${CFLAGS}")
 
+# Assembly flags: Ruby compiles coroutine .S files with ASFLAGS (not CFLAGS).
+# Without the arch/min-version, the assembler may produce incorrect objects.
+set(ASFLAGS "-mmacosx-version-min=${MACOS_MIN_VERSION}")
+if(CMAKE_OSX_ARCHITECTURES)
+    foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
+        set(ASFLAGS "${ASFLAGS} -arch ${ARCH}")
+    endforeach()
+endif()
+
 set(LDFLAGS "-L${BUILD_STAGING_DIR}/usr/lib")
 set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/local/lib")
 set(LDFLAGS "${LDFLAGS} -mmacosx-version-min=${MACOS_MIN_VERSION}")
@@ -78,6 +87,7 @@ set(BUILD_ENV
     RANLIB=${CROSS_RANLIB}
     STRIP=${CROSS_STRIP}
     LD=${CROSS_LD}
+    ASFLAGS=${ASFLAGS}
     CFLAGS=${CFLAGS}
     CXXFLAGS=${CXXFLAGS}
     CPPFLAGS=${CPPFLAGS}
