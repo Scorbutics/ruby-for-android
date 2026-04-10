@@ -15,7 +15,7 @@ set(CROSS_LD "${CMAKE_LINKER}")
 # Use a stable, unversioned triplet so that archive paths are portable across
 # macOS versions (clang -dumpmachine returns e.g. arm64-apple-darwin24.0.0).
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|ARM64|aarch64")
-    set(MACOS_HOST_TRIPLET "arm64-apple-darwin")
+    set(MACOS_HOST_TRIPLET "aarch64-apple-darwin")
 else()
     set(MACOS_HOST_TRIPLET "x86_64-apple-darwin")
 endif()
