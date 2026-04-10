@@ -12,19 +12,12 @@ set(CROSS_STRIP "${CMAKE_STRIP}")
 set(CROSS_LD "${CMAKE_LINKER}")
 
 # Determine host triplet
-execute_process(
-    COMMAND ${CMAKE_C_COMPILER} -dumpmachine
-    OUTPUT_VARIABLE MACOS_HOST_TRIPLET
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-if(NOT MACOS_HOST_TRIPLET)
-    # Fallback based on architecture
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|ARM64")
-        set(MACOS_HOST_TRIPLET "arm64-apple-darwin")
-    else()
-        set(MACOS_HOST_TRIPLET "x86_64-apple-darwin")
-    endif()
+# Use a stable, unversioned triplet so that archive paths are portable across
+# macOS versions (clang -dumpmachine returns e.g. arm64-apple-darwin24.0.0).
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|ARM64|aarch64")
+    set(MACOS_HOST_TRIPLET "arm64-apple-darwin")
+else()
+    set(MACOS_HOST_TRIPLET "x86_64-apple-darwin")
 endif()
 
 message(STATUS "macOS Host Triplet: ${MACOS_HOST_TRIPLET}")
