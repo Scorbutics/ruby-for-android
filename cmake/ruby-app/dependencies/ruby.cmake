@@ -64,7 +64,7 @@ set(RUBY_INSTALL_CMD
 # Build Ruby (depends on all other libraries)
 # Static dependencies: zlib, gmp, libxcrypt (Linux only)
 # Shared dependencies from system: openssl, gdbm, readline, ncurses
-set(RUBY_DEPENDENCIES zlib gmp openssl gdbm readline)
+set(RUBY_DEPENDENCIES zlib gmp libffi openssl gdbm readline)
 
 # Add libxcrypt for Linux builds only (Android's Bionic doesn't provide crypt)
 if(TARGET_PLATFORM STREQUAL "Linux")
@@ -123,7 +123,13 @@ endif()
 
 # Construct archive name from platform and architecture
 string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
-set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${PLATFORM_LOWER}-${TARGET_ARCH}.zip")
+# For iOS, include device/simulator variant so archives don't collide
+if(IOS AND DEFINED IOS_PLATFORM)
+    set(_ARCHIVE_PLATFORM "${PLATFORM_LOWER}-${IOS_PLATFORM}")
+else()
+    set(_ARCHIVE_PLATFORM "${PLATFORM_LOWER}")
+endif()
+set(RUBY_FULL_ARCHIVE_NAME "ruby_full-${_ARCHIVE_PLATFORM}-${TARGET_ARCH}.zip")
 
 # Create custom archive target using our restructuring script
 # This replaces the simple create_archive_target() with a custom command

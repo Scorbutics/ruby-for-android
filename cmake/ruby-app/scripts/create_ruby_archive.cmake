@@ -181,6 +181,13 @@ list(APPEND EXTRA_INCLUDE_ENTRIES
     ${EXTRA_INCLUDE_BASE}/zconf.h
 )
 
+# Add libffi headers
+foreach(_ffi_header ffi.h ffitarget.h)
+    if(EXISTS "${EXTRA_INCLUDE_BASE}/${_ffi_header}")
+        list(APPEND EXTRA_INCLUDE_ENTRIES "${EXTRA_INCLUDE_BASE}/${_ffi_header}")
+    endif()
+endforeach()
+
 foreach(ENTRY ${EXTRA_INCLUDE_ENTRIES})
     get_filename_component(ENTRY_NAME "${ENTRY}" NAME)
     if(IS_DIRECTORY "${ENTRY}")
