@@ -29,8 +29,16 @@ endif()
 set(CMAKE_AR "${COMBINE_AR}")
 set(CMAKE_RANLIB "${COMBINE_RANLIB}")
 set(CMAKE_NM "${COMBINE_NM}")
-if(DEFINED COMBINE_OBJCOPY)
+if(DEFINED COMBINE_OBJCOPY AND NOT "${COMBINE_OBJCOPY}" STREQUAL "")
     set(CMAKE_OBJCOPY "${COMBINE_OBJCOPY}")
+else()
+    # Fallback: try to find objcopy on the system
+    find_program(CMAKE_OBJCOPY NAMES objcopy llvm-objcopy)
+    if(CMAKE_OBJCOPY)
+        message(STATUS "COMBINE_OBJCOPY not provided, found objcopy: ${CMAKE_OBJCOPY}")
+    else()
+        message(WARNING "objcopy not found — duplicate symbol localization will be skipped")
+    endif()
 endif()
 
 # Convert semicolon-separated string to list
