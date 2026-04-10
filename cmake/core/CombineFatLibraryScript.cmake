@@ -45,14 +45,36 @@ endif()
 string(REPLACE ";" "\\;" LIBS_LIST "${COMBINE_LIBS}")
 set(LIBS_LIST "${COMBINE_LIBS}")
 
-# Filter out libraries that don't exist at build time
-# This handles platform differences (e.g., Android doesn't have libcrypt.a)
+# Filter out libraries that don't exist at build time.
+# When a library is missing, try a build-time glob to find versioned variants
+# (e.g., libruby-static.a → libruby.3.4-static.a on macOS).
+# This is needed because configure-time globs run before dependencies are built.
 set(EXISTING_LIBS)
 foreach(lib ${LIBS_LIST})
     if(EXISTS "${lib}")
         list(APPEND EXISTING_LIBS "${lib}")
     else()
-        message(STATUS "Skipping non-existent library: ${lib}")
+        # Try globbing for versioned variants: insert ".*" or "*" before the
+        # first hyphen in the basename.  libruby-static.a → libruby*-static.a
+        get_filename_component(_dir "${lib}" DIRECTORY)
+        get_filename_component(_name "${lib}" NAME)
+        # Build glob pattern: libruby-static.a → libruby*-static.a
+        string(REGEX REPLACE "^(lib[^-]+)(-.+)$" "\\1*\\2" _glob_pattern "${_name}")
+        if(NOT "${_glob_pattern}" STREQUAL "${_name}")
+            file(GLOB _glob_matches "${_dir}/${_glob_pattern}")
+            # Filter out any -ext variants to avoid picking up libruby-ext.a
+            list(FILTER _glob_matches EXCLUDE REGEX "-ext[.-]")
+            if(_glob_matches)
+                list(GET _glob_matches 0 _resolved)
+                get_filename_component(_resolved_name "${_resolved}" NAME)
+                message(STATUS "Resolved missing ${_name} → ${_resolved_name}")
+                list(APPEND EXISTING_LIBS "${_resolved}")
+            else()
+                message(STATUS "Skipping non-existent library: ${lib}")
+            endif()
+        else()
+            message(STATUS "Skipping non-existent library: ${lib}")
+        endif()
     endif()
 endforeach()
 
