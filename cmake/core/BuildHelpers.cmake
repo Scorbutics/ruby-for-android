@@ -117,12 +117,20 @@ function(add_external_dependency)
             message(STATUS "  Patch base dir: ${PATCH_BASE_DIR}")
             message(STATUS "  Looking for patches: library=${DEP_NAME} version=${DEP_VERSION} platform=${PLATFORM_LOWER}")
 
+            # Determine build type for conditional patch annotations ([shared] / [static])
+            if(BUILD_SHARED_LIBS)
+                set(_PATCH_BUILD_TYPE "shared")
+            else()
+                set(_PATCH_BUILD_TYPE "static")
+            endif()
+
             # Get the list of patches to apply
             get_platform_patches(
                 LIBRARY ${DEP_NAME}
                 VERSION ${DEP_VERSION}
                 PLATFORM ${PLATFORM_LOWER}
                 PATCH_BASE "${PATCH_BASE_DIR}/.."
+                BUILD_TYPE ${_PATCH_BUILD_TYPE}
                 OUTPUT_VAR PATCH_LIST
             )
 
@@ -241,7 +249,7 @@ endfunction()
 #
 function(get_platform_patches)
     set(options "")
-    set(oneValueArgs LIBRARY VERSION PLATFORM PATCH_BASE OUTPUT_VAR)
+    set(oneValueArgs LIBRARY VERSION PLATFORM PATCH_BASE BUILD_TYPE OUTPUT_VAR)
     set(multiValueArgs "")
     cmake_parse_arguments(PATCH "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -282,6 +290,19 @@ function(get_platform_patches)
                 string(STRIP "${PATCH_FILE}" PATCH_FILE)
                 # Skip comments and empty lines
                 if(NOT PATCH_FILE MATCHES "^#" AND NOT PATCH_FILE STREQUAL "")
+                    # Parse optional build-type condition: "file.patch [shared]" or "file.patch [static]"
+                    set(PATCH_CONDITION "")
+                    if(PATCH_FILE MATCHES "^(.+[^ \t])[ \t]+\\[([a-zA-Z]+)\\]$")
+                        set(PATCH_FILE "${CMAKE_MATCH_1}")
+                        set(PATCH_CONDITION "${CMAKE_MATCH_2}")
+                    endif()
+
+                    # Skip patch if build-type condition doesn't match
+                    if(PATCH_CONDITION AND PATCH_BUILD_TYPE AND NOT PATCH_CONDITION STREQUAL PATCH_BUILD_TYPE)
+                        message(STATUS "    Skipping ${PATCH_FILE} (condition [${PATCH_CONDITION}], build type: ${PATCH_BUILD_TYPE})")
+                        continue()
+                    endif()
+
                     set(PATCH_PATH "${SEARCH_PATH}/${PATCH_FILE}")
                     if(EXISTS "${PATCH_PATH}")
                         list(APPEND COLLECTED_PATCHES "${PATCH_PATH}")
