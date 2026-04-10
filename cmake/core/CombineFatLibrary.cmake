@@ -204,8 +204,12 @@ function(combine_fat_library)
             continue()
         endif()
 
-        # Match only strong symbols (T, D, B, R)
-        if(NOT line MATCHES "^(.+):[ ]*[0-9a-fA-F]+ +([TDBR]) +(.+)$")
+        # Match strong defined symbols: T (text), D (data), B (BSS), R (read-only),
+        # S (section — macOS uses this for __DATA,__const and similar non-standard
+        #   sections that ELF maps to R/D; without S the dedup logic cannot see
+        #   const-qualified extern data on macOS, and may drop objects whose only
+        #   unique contributions are S-typed symbols).
+        if(NOT line MATCHES "^(.+):[ ]*[0-9a-fA-F]+ +([TDBRS]) +(.+)$")
             continue()
         endif()
 
