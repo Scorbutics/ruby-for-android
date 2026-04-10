@@ -44,10 +44,12 @@ elseif(TARGET_PLATFORM STREQUAL "macOS")
     if(RUBY_TARGET_ARCH STREQUAL "arm64")
         set(OPENSSL_CONFIGURE_CMD
             ./Configure darwin64-arm64-cc ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
+                --prefix=/usr/local
         )
     else()
         set(OPENSSL_CONFIGURE_CMD
             ./Configure darwin64-x86_64-cc ${OPENSSL_SHARED_FLAG} ${OPENSSL_TEST_FLAG}
+                --prefix=/usr/local
         )
     endif()
 else()

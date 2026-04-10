@@ -73,6 +73,8 @@ set(LDFLAGS "${LDFLAGS} -L${BUILD_STAGING_DIR}/usr/local/lib")
 set(LDFLAGS "${LDFLAGS} -mmacosx-version-min=${MACOS_MIN_VERSION}")
 
 # Set environment variables for autoconf-based builds
+# PKG_CONFIG_LIBDIR: restrict pkg-config to only find packages in the staging
+# directory, preventing Homebrew's OpenSSL (or other libs) from being picked up
 set(BUILD_ENV
     CC=${CROSS_CC}
     CXX=${CROSS_CXX}
@@ -86,6 +88,7 @@ set(BUILD_ENV
     CPPFLAGS=${CPPFLAGS}
     LDFLAGS=${LDFLAGS}
     MACOSX_DEPLOYMENT_TARGET=${MACOS_MIN_VERSION}
+    PKG_CONFIG_LIBDIR=${BUILD_STAGING_DIR}/usr/lib/pkgconfig:${BUILD_STAGING_DIR}/usr/local/lib/pkgconfig
 )
 
 # Export for use in dependency builds

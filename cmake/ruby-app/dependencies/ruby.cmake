@@ -18,7 +18,7 @@ set(RUBY_CONFIGURE_CMD
     --host=${HOST_TRIPLET}
     --target=${HOST_TRIPLET}
     --with-opt-dir=${BUILD_STAGING_DIR}/usr
-    --with-openssl-dir=${BUILD_STAGING_DIR}/usr
+    --with-openssl-dir=${BUILD_STAGING_DIR}/usr/local
 )
 
 # Use BUILD_SHARED_LIBS to control Ruby build mode
