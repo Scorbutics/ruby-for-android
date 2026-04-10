@@ -86,6 +86,10 @@ if(TARGET_PLATFORM STREQUAL "Linux")
     list(APPEND LIBS -lm -lpthread -ldl)
 elseif(TARGET_PLATFORM STREQUAL "Android")
     list(APPEND LIBS -lm -ldl -llog)
+elseif(TARGET_PLATFORM STREQUAL "macOS")
+    list(APPEND LIBS -lm)
+    # Ruby uses CoreFoundation on macOS for Unicode path normalization
+    list(APPEND LIBS -framework CoreFoundation)
 elseif(TARGET_PLATFORM STREQUAL "iOS")
     list(APPEND LIBS -lm)
     # iOS needs system framework for startup code

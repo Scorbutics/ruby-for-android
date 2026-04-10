@@ -121,16 +121,6 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Show ExternalProject logs on failure
-        if: failure()
-        run: |
-          echo "=== ExternalProject error logs ==="
-          find build-${{ matrix.platform }} -name '*-err.log' -type f -size +0 | sort | while read -r log; do
-            echo ""
-            echo ">>> $log <<<"
-            cat "$log"
-          done
-
       # --- Link test (verify no missing symbols) ---
       - name: Link test
         run: |
