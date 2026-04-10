@@ -193,9 +193,11 @@ function(combine_fat_library)
             continue()
         endif()
 
-        # Parse line: "filename: address type symbol"
+        # Parse line: "filename:address type symbol"
+        # GNU nm -A format:  "filename:0000... T symbol" (no space after colon)
+        # LLVM nm -A format: "filename: 0000... T symbol" (space after colon)
         # Track undefined (U) references so we know which symbols are needed
-        if(line MATCHES "^(.+): +U +(.+)$")
+        if(line MATCHES "^(.+):[ ]*U +(.+)$")
             set(ref_file "${CMAKE_MATCH_1}")
             set(ref_symbol "${CMAKE_MATCH_2}")
             list(APPEND "FILE_UNDEF_${ref_file}" "${ref_symbol}")
@@ -203,7 +205,7 @@ function(combine_fat_library)
         endif()
 
         # Match only strong symbols (T, D, B, R)
-        if(NOT line MATCHES "^(.+): +[0-9a-fA-F]+ +([TDBR]) +(.+)$")
+        if(NOT line MATCHES "^(.+):[ ]*[0-9a-fA-F]+ +([TDBR]) +(.+)$")
             continue()
         endif()
 
