@@ -307,7 +307,7 @@ make install
 For local builds without Docker:
 
 1. Install required tools:
-   - CMake 3.10+
+   - CMake 3.14+
    - make
    - autoconf
    - Ruby 3.0.0+

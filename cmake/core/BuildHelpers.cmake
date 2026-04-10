@@ -195,6 +195,7 @@ function(add_external_dependency)
         LOG_CONFIGURE       TRUE
         LOG_BUILD           TRUE
         LOG_INSTALL         TRUE
+        LOG_OUTPUT_ON_FAILURE TRUE
 
         DEPENDS             ${DEP_DEPENDS}
     )
@@ -210,6 +211,7 @@ function(add_external_dependency)
             DEPENDERS configure
             WORKING_DIRECTORY ${SOURCE_DIR}
             LOG TRUE
+            LOG_OUTPUT_ON_FAILURE TRUE
         )
     endif()
 

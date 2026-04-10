@@ -10,7 +10,7 @@
 #   RUBY_VERSION         - Ruby version (e.g., 3.1.1)
 #   RUBY_ABI_VERSION     - Ruby ABI version (e.g., 3.1.0)
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 # Validate required variables
 foreach(VAR BUILD_STAGING_DIR HOST_TRIPLET PLATFORM_LOWER ARCHIVE_OUTPUT RUBY_VERSION RUBY_ABI_VERSION)

@@ -6,7 +6,7 @@
 #   BUILD_STAGING_DIR, RUBY_ABI_VERSION, CROSS_CC, CFLAGS, LDFLAGS,
 #   TARGET_PLATFORM, LINK_TEST_SRC, LINK_TEST_BIN
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 # Load configuration (avoids space-in-value issues with -D arguments)
 if(NOT DEFINED LINK_TEST_CONFIG)

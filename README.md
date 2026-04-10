@@ -101,7 +101,7 @@ ruby-for-android/
 
 **Option 2: Manual Setup (Without Docker)**
 - Unix-based system (Linux, macOS, WSL)
-- CMake 3.10+
+- CMake 3.14+
 - make
 - Android NDK r22+ (for Android builds)
 - Build essentials (gcc, autoconf, automake, etc.)
@@ -360,7 +360,7 @@ make install
 ### Common Issues
 
 **Issue**: `cmake: command not found`
-- Install CMake 3.10 or later
+- Install CMake 3.14 or later
 
 **Issue**: `Cannot find Android NDK`
 - Set `ANDROID_NDK` environment variable
