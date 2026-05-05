@@ -9,7 +9,7 @@
 
 set(PHYSFS_VERSION "3.2.0")
 set(PHYSFS_URL "https://github.com/icculus/physfs/archive/refs/tags/release-${PHYSFS_VERSION}.tar.gz")
-set(PHYSFS_HASH "SHA256=58aa7eb5824f3c61c19d0334a39c129a2885d9c72bd13bbef7af553e6c92a9f3")
+set(PHYSFS_HASH "SHA256=1991500eaeb8d5325e3a8361847ff3bf8e03ec89252b7915e1f25b3f8ab5d560")
 
 set(_PHYSFS_SCRIPTS "${CMAKE_CURRENT_LIST_DIR}/scripts")
 
