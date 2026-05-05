@@ -6,6 +6,11 @@ include(ExternalProject)
 
 include(PlatformDetection)
 
+# Captured at include time so functions in this file can resolve sibling
+# helper scripts. CMAKE_CURRENT_FUNCTION_LIST_DIR would be cleaner but
+# requires CMake 3.17, and this project pins 3.14.
+set(_BUILDHELPERS_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
 string(TOLOWER "${TARGET_PLATFORM}" PLATFORM_LOWER)
 
 # Global configuration
@@ -212,12 +217,18 @@ function(add_external_dependency)
     # -force_cpusubtype_ALL into their link commands. Modern Xcode linkers
     # (15+) no longer recognize this flag. Strip it from configure/ltmain.sh
     # after patches are applied but before configure runs.
+    #
+    # Only the autoconf-shaped deps actually have configure/ltmain.sh — for
+    # CMake-based deps (e.g. physfs) those files don't exist and perl -pi
+    # would fail. We dispatch through a tiny cmake -P script that no-ops
+    # missing files instead of guessing per-dep here.
     if(TARGET_PLATFORM STREQUAL "iOS" OR TARGET_PLATFORM STREQUAL "macOS")
         ExternalProject_Add_Step(${DEP_NAME}_external strip_legacy_darwin_flags
-            COMMAND perl -pi -e "s/ -force_cpusubtype_ALL//g" configure ltmain.sh
+            COMMAND ${CMAKE_COMMAND}
+                    -DTARGET_DIR=${SOURCE_DIR}
+                    -P ${_BUILDHELPERS_DIR}/scripts/strip_legacy_darwin_flags.cmake
             DEPENDEES patch
             DEPENDERS configure
-            WORKING_DIRECTORY ${SOURCE_DIR}
             LOG TRUE
             LOG_OUTPUT_ON_FAILURE TRUE
         )
@@ -380,6 +391,48 @@ function(create_archive_target)
     set(TARGET_ARCHIVES "${TARGET_ARCHIVES};${ARCHIVE_OUTPUT}" CACHE STRING "List of archives to export (relative to BUILD_STAGING_DIR)" FORCE)
 
     message(STATUS "Registered archive for export: ${ARCHIVE_OUTPUT}")
+endfunction()
+
+#
+# get_sub_cmake_cross_args()
+#
+# Build the list of -D arguments needed by a child CMake invocation (i.e. an
+# ExternalProject CONFIGURE_COMMAND that runs `cmake -S ... -B ...`) so that
+# the child inherits the same cross-compile target as the parent.
+#
+# Use this for dependencies whose upstream is itself CMake-based (or for which
+# we provide a small in-tree CMakeLists.txt). Autoconf-based deps don't need
+# it — they pick up CC/CFLAGS/etc. from BUILD_ENV.
+#
+# Output:
+#   <OUT_VAR>  list variable receiving the args (set in PARENT_SCOPE)
+#
+function(get_sub_cmake_cross_args OUT_VAR)
+    set(_args
+        "-DCMAKE_INSTALL_PREFIX=${BUILD_STAGING_DIR}/usr/local"
+        "-DCMAKE_INSTALL_LIBDIR=lib"
+        "-DCMAKE_INSTALL_INCLUDEDIR=include"
+        "-DCMAKE_BUILD_TYPE=Release"
+        "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+    )
+    if(TARGET_PLATFORM STREQUAL "Android")
+        list(APPEND _args
+            "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_ANDROID_NDK}/build/cmake/android.toolchain.cmake"
+            "-DANDROID_ABI=${ANDROID_ABI}"
+            "-DANDROID_PLATFORM=${ANDROID_PLATFORM}"
+            "-DANDROID_NDK=${CMAKE_ANDROID_NDK}"
+        )
+    elseif(TARGET_PLATFORM STREQUAL "iOS")
+        list(APPEND _args "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
+    elseif(TARGET_PLATFORM STREQUAL "macOS")
+        if(CMAKE_OSX_ARCHITECTURES)
+            list(APPEND _args "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}")
+        endif()
+        if(CMAKE_OSX_DEPLOYMENT_TARGET)
+            list(APPEND _args "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+        endif()
+    endif()
+    set(${OUT_VAR} "${_args}" PARENT_SCOPE)
 endfunction()
 
 message(STATUS "Generic Build System loaded - NCPUS: ${BUILD_PARALLEL_JOBS}")

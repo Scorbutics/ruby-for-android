@@ -2,16 +2,14 @@
 # Configuration for PhysicsFS (libphysfs) — virtual filesystem for game/asset
 # bundles. Used by the ruby-physfs gem to expose mount/read/glob to Ruby.
 #
-# We compile src/*.c directly with the cross-toolchain rather than fighting
-# CMake-vs-autoconf cross-build differences. PhysFS's own #ifdef-guarded
-# sources select platform code at preprocessor time. See:
-#   cmake/ruby-app/dependencies/scripts/{build,install}_physfs.sh
+# PhysFS ships its own CMakeLists.txt; we use it directly. Cross-compile
+# settings reach the child CMake via get_sub_cmake_cross_args().
 
 set(PHYSFS_VERSION "3.2.0")
 set(PHYSFS_URL "https://github.com/icculus/physfs/archive/refs/tags/release-${PHYSFS_VERSION}.tar.gz")
 set(PHYSFS_HASH "SHA256=1991500eaeb8d5325e3a8361847ff3bf8e03ec89252b7915e1f25b3f8ab5d560")
 
-set(_PHYSFS_SCRIPTS "${CMAKE_CURRENT_LIST_DIR}/scripts")
+get_sub_cmake_cross_args(_PHYSFS_CMAKE_ARGS)
 
 add_external_dependency(
     NAME physfs
@@ -19,16 +17,16 @@ add_external_dependency(
     URL ${PHYSFS_URL}
     URL_HASH ${PHYSFS_HASH}
     ARCHIVE_NAME "physfs-release-${PHYSFS_VERSION}"
-    # No-op configure — the build script doesn't need autoconf/cmake.
-    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E true
-    # Build is a pure-CMake script (no shell) — works on Linux/macOS/Windows
-    # build hosts. The script reads CC/CFLAGS/AR from the env that
-    # add_external_dependency injects via `cmake -E env ${BUILD_ENV}`.
-    BUILD_COMMAND     ${CMAKE_COMMAND} -P "${_PHYSFS_SCRIPTS}/build_physfs.cmake"
-    # Install: copy the static lib + public header into staging. Two
-    # files; not worth a dedicated script.
-    INSTALL_COMMAND ${CMAKE_COMMAND} -E make_directory "${BUILD_STAGING_DIR}/usr/local/lib"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${BUILD_STAGING_DIR}/usr/local/include"
-            COMMAND ${CMAKE_COMMAND} -E copy libphysfs.a   "${BUILD_STAGING_DIR}/usr/local/lib/"
-            COMMAND ${CMAKE_COMMAND} -E copy src/physfs.h  "${BUILD_STAGING_DIR}/usr/local/include/"
+    BUILD_IN_SOURCE FALSE
+    CONFIGURE_COMMAND ${CMAKE_COMMAND}
+                      -S <SOURCE_DIR>
+                      -B <BINARY_DIR>
+                      ${_PHYSFS_CMAKE_ARGS}
+                      -DPHYSFS_BUILD_STATIC=ON
+                      -DPHYSFS_BUILD_SHARED=OFF
+                      -DPHYSFS_BUILD_TEST=OFF
+                      -DPHYSFS_BUILD_DOCS=OFF
+                      -DPHYSFS_DISABLE_INSTALL=OFF
+    BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> -j${BUILD_PARALLEL_JOBS}
+    INSTALL_COMMAND   ${CMAKE_COMMAND} --install <BINARY_DIR>
 )

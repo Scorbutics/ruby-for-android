@@ -1,22 +1,16 @@
 # Build scripts for ruby-for-android dependencies
 
-Pure-CMake scripts (`cmake -P`) that handle the **build** step of dependencies
-whose upstream build systems don't fit the canonical autoconf
-`./configure && make` flow. CMake invokes the toolchain directly via
-`execute_process` — no shell needed, so these work identically on Linux,
-macOS, and Windows build hosts.
+In-tree build helpers for dependencies whose upstream build systems don't
+fit the canonical autoconf `./configure && make` flow.
 
-Install steps are inlined into the cmake files themselves (`${CMAKE_COMMAND}
--E copy`) — no separate scripts.
-
-| File | Used by | Purpose |
+| Path | Used by | Purpose |
 |---|---|---|
-| `build_physfs.cmake` | `physfs.cmake` | Compile PhysicsFS sources directly with the cross-toolchain (PhysFS is "drop-in compilable" plain C — no autoconf/cmake of its own needed). |
-| `build_ruby_physfs.cmake` | `ruby-physfs.cmake` | Cross-compile the [ruby-physfs gem](https://github.com/Scorbutics/ruby-physfs)'s C++ sources into `libphysfs-ruby.a` (bypasses mkmf, which is awkward to cross-compile). |
+| `ruby-physfs/CMakeLists.txt` | `ruby-physfs.cmake` | Builds `libphysfs-ruby.a` from the gem's `ext/physfs/*.cpp`. The gem only ships an extconf.rb / Rakefile, both awkward to cross-compile, so we provide our own CMakeLists.txt and invoke it as a sub-CMake build. |
 
-Both scripts read the cross-toolchain from env vars (`CC` / `CXX` / `CFLAGS`
-/ `AR`) injected by `BUILD_ENV` via the wrapping `cmake -E env ...` from
-`add_external_dependency`.
+Sub-CMake builds inherit cross-compile settings from the parent via
+`get_sub_cmake_cross_args()` (defined in `cmake/core/BuildHelpers.cmake`),
+which forwards the right toolchain file / arch flags depending on
+`TARGET_PLATFORM`.
 
 ## How `require 'physfs'` works without an .so
 
