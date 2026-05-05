@@ -87,12 +87,16 @@ function(declare_application)
     set(APP_PATCHES_DIR "${ARG_PATCHES_DIR}")
     set(APP_DEPENDENCIES_DIR "${ARG_DEPENDENCIES_DIR}")
 
-    option(BUILD_DEPS_ONLY "Build only dependencies, skip the main application (ruby)" OFF)
+    option(BUILD_DEPS_ONLY "Build only dependencies, skip the main application (ruby) and Ruby-bound gems" OFF)
+
+    # In BUILD_DEPS_ONLY mode, skip Ruby itself AND any Ruby-bound gems
+    # whose build needs Ruby's installed headers (e.g., ruby-physfs).
+    set(_RUBY_BOUND_DEPS "ruby" "ruby-physfs")
 
     # Load dependency configurations
     foreach(DEP ${ARG_APP_DEPENDENCIES})
-        if(BUILD_DEPS_ONLY AND DEP STREQUAL "ruby")
-            message(STATUS "Skipping Ruby configuration (dependencies-only mode)")
+        if(BUILD_DEPS_ONLY AND DEP IN_LIST _RUBY_BOUND_DEPS)
+            message(STATUS "Skipping ${DEP} configuration (dependencies-only mode)")
             continue()
         endif()
         set(DEP_FILE "${ARG_DEPENDENCIES_DIR}/${DEP}.cmake")
@@ -114,8 +118,8 @@ function(declare_application)
     foreach(DEP ${ARG_APP_DEPENDENCIES})
         if(NOT TARGET ${DEP})
             message(WARNING "Dependency wrapper target not found: ${DEP}")
-        elseif(BUILD_DEPS_ONLY AND DEP STREQUAL "ruby")
-            message(STATUS "Skipping Ruby (dependencies-only mode)")
+        elseif(BUILD_DEPS_ONLY AND DEP IN_LIST _RUBY_BOUND_DEPS)
+            message(STATUS "Skipping ${DEP} (dependencies-only mode)")
         else()
             add_dependencies(app_build ${DEP})
             list(APPEND EXISTING_APP_DEPENDENCIES ${DEP})

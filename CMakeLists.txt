@@ -14,7 +14,10 @@ include(Main)
 declare_application(
     APP_NAME "CRuby"
     APP_DIR "${CMAKE_SOURCE_DIR}/cmake/ruby-app"
-    APP_DEPENDENCIES "zlib;gmp;libffi;ncurses;readline;gdbm;openssl;libmd;libbsd;libxcrypt;ruby"
+    # Order matters: physfs builds independently, ruby-physfs depends on
+    # `ruby` (for headers) and `physfs` (for libphysfs.a + physfs.h),
+    # so both must precede it in this list.
+    APP_DEPENDENCIES "zlib;gmp;libffi;ncurses;readline;gdbm;openssl;libmd;libbsd;libxcrypt;ruby;physfs;ruby-physfs"
     APP_VERSION "3.1.1"
     APP_DESCRIPTION "Ruby Programming Language for Cross-Platform Targets"
 )
