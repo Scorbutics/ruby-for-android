@@ -22,6 +22,9 @@ add_external_dependency(
                       -S <SOURCE_DIR>
                       -B <BINARY_DIR>
                       ${_PHYSFS_CMAKE_ARGS}
+                      # PhysFS 3.2.0's cmake_minimum_required is below 3.5,
+                      # which CMake 4.x rejects outright. Allow it.
+                      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
                       -DPHYSFS_BUILD_STATIC=ON
                       -DPHYSFS_BUILD_SHARED=OFF
                       -DPHYSFS_BUILD_TEST=OFF
