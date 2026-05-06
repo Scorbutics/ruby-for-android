@@ -57,10 +57,10 @@ set(BUILD_PARALLEL_JOBS ${NCPUS} CACHE STRING "Number of parallel build jobs")
 #
 function(add_external_dependency)
     set(options "")
-    set(oneValueArgs NAME VERSION URL URL_HASH ARCHIVE_NAME PATCH_DIR 
+    set(oneValueArgs NAME VERSION URL_HASH ARCHIVE_NAME PATCH_DIR
                      GIT_REPOSITORY GIT_TAG GIT_SHALLOW GIT_SUBMODULES_RECURSE
                      BUILD_IN_SOURCE)
-    set(multiValueArgs CONFIGURE_COMMAND BUILD_COMMAND INSTALL_COMMAND
+    set(multiValueArgs URL CONFIGURE_COMMAND BUILD_COMMAND INSTALL_COMMAND
                        EXTRACT_COMMAND PATCH_COMMAND DEPENDS ENV_VARS)
     cmake_parse_arguments(DEP "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
