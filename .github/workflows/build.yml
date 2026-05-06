@@ -34,9 +34,11 @@ jobs:
             build_type: static
 
           # Linux x86_64 (glibc)
+          # Pinned to ubuntu-22.04 (glibc 2.35) so produced binaries don't
+          # depend on __isoc23_* symbols introduced by glibc 2.38 C23 redirects.
           - platform: linux-x86_64
             triplet: x86_64-linux-gnu
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
             use_docker: false
             toolchain: x86_64-linux-toolchain.params
             build_type: static
