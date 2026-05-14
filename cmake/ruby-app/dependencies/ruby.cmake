@@ -101,6 +101,40 @@ add_external_dependency(
     DEPENDS ${RUBY_DEPENDENCIES}
 )
 
+# Recompute SOURCE_DIR the way BuildHelpers does it (see line 87) so we can
+# attach extra steps to the externalproject. ExternalProject_Get_Property
+# would work too but requires the project to be finalized.
+set(_RUBY_SOURCE_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}/ruby-${RUBY_VERSION}")
+
+# Promote the bundled `debug` gem to a first-class Ruby ext so it gets
+# statically linked alongside socket / io_console / objspace. See the script
+# header comments for the full rationale. Without this, --with-static-linked-ext
+# causes rbinstall.rb to silently drop the gem, breaking remote DAP debugging.
+ExternalProject_Add_Step(ruby_external integrate_debug_gem
+    COMMAND ${CMAKE_COMMAND}
+        -DRUBY_SOURCE_DIR=${_RUBY_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_LIST_DIR}/../scripts/integrate_debug_gem.cmake
+    DEPENDEES patch
+    DEPENDERS configure
+    LOG TRUE
+    LOG_OUTPUT_ON_FAILURE TRUE
+    COMMENT "Promoting bundled `debug` gem ext into Ruby ext/debug/"
+)
+
+# Companion post-install: copy the gem's pure-Ruby lib/ into staging so
+# `require 'debug'` resolves via RUBYLIB. The C ext was handled above.
+ExternalProject_Add_Step(ruby_external install_debug_gem_lib
+    COMMAND ${CMAKE_COMMAND}
+        -DRUBY_SOURCE_DIR=${_RUBY_SOURCE_DIR}
+        -DSTAGING_DIR=${BUILD_STAGING_DIR}
+        -DRUBY_ABI_VERSION=${RUBY_ABI_VERSION}
+        -P ${CMAKE_CURRENT_LIST_DIR}/../scripts/install_debug_gem_lib.cmake
+    DEPENDEES install
+    LOG TRUE
+    LOG_OUTPUT_ON_FAILURE TRUE
+    COMMENT "Installing debug gem pure-Ruby lib into staging"
+)
+
 # For static builds, create a combined extensions library (libruby-ext.a)
 if(NOT BUILD_SHARED_LIBS)
     set(RUBY_EXT_LIB "${BUILD_STAGING_DIR}/usr/local/lib/libruby-ext.a")
