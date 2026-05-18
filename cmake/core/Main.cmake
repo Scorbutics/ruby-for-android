@@ -89,9 +89,8 @@ function(declare_application)
 
     option(BUILD_DEPS_ONLY "Build only dependencies, skip the main application (ruby) and Ruby-bound gems" OFF)
 
-    # In BUILD_DEPS_ONLY mode, skip Ruby itself AND any Ruby-bound gems
-    # whose build needs Ruby's installed headers (e.g., ruby-physfs).
-    set(_RUBY_BOUND_DEPS "ruby" "ruby-physfs")
+    # In BUILD_DEPS_ONLY mode, skip Ruby itself.
+    set(_RUBY_BOUND_DEPS "ruby")
 
     # Load dependency configurations
     foreach(DEP ${ARG_APP_DEPENDENCIES})

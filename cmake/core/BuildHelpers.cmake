@@ -219,9 +219,9 @@ function(add_external_dependency)
     # after patches are applied but before configure runs.
     #
     # Only the autoconf-shaped deps actually have configure/ltmain.sh — for
-    # CMake-based deps (e.g. physfs) those files don't exist and perl -pi
-    # would fail. We dispatch through a tiny cmake -P script that no-ops
-    # missing files instead of guessing per-dep here.
+    # CMake-based deps those files don't exist and perl -pi would fail. We
+    # dispatch through a tiny cmake -P script that no-ops missing files
+    # instead of guessing per-dep here.
     if(TARGET_PLATFORM STREQUAL "iOS" OR TARGET_PLATFORM STREQUAL "macOS")
         ExternalProject_Add_Step(${DEP_NAME}_external strip_legacy_darwin_flags
             COMMAND ${CMAKE_COMMAND}
