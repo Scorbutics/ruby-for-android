@@ -1,0 +1,6 @@
+# Ruby 3.0's configure reads EXTSTATIC (--with-static-linked-ext) after the
+# darwin block that picks the extension link flags, so static macOS/iOS builds
+# get -bundle_loader '$(BUILTRUBY)' and linking ruby fails with
+# "ld: -bundle_loader missing <path>". 3.1+ parse the option first. Only the
+# generated configure is patched (no darwin change elsewhere, inert on Linux/Android).
+fix-darwin-static-ext-bundle-loader.patch

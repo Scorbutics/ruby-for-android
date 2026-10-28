@@ -1,0 +1,6 @@
+# Ruby 3.0 asks the build host for the Android API level (getprop, which only
+# exists on a device) even when cross-compiling, then adds an empty
+# -D__ANDROID_API__= to CPPFLAGS and every configure test fails. Backport of
+# the 3.1 guard (probe only when not cross-compiling). Only the generated
+# configure is patched, so the Makefile never reruns autoconf.
+fix-android-api-detection-cross-compile.patch

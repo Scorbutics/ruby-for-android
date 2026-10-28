@@ -1,0 +1,16 @@
+--- a/configure
++++ b/configure
+@@ -29735,11 +29735,12 @@
+                             # Resolve symbols from libruby.dylib when --enable-shared
+                             EXTDLDFLAGS='$(LIBRUBYARG_SHARED)'
+ 
+-elif test "x$EXTSTATIC" = x
++elif test "x$EXTSTATIC" = x && test "x${with_static_linked_ext:-no}" = xno
+ then :
+ 
+                             # When building exts as bundles, a mach-o bundle needs to know its loader
+                             # program to bind symbols from the ruby executable
++                            # (EXTSTATIC is only set later in 3.0: test the option itself)
+                             EXTDLDFLAGS="-bundle_loader '\$(BUILTRUBY)'"
+ 
+ fi

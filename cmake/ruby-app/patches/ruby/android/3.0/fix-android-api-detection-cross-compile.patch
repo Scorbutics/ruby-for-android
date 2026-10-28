@@ -1,0 +1,19 @@
+--- a/configure
++++ b/configure
+@@ -10165,6 +10165,8 @@
+ 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+     printf "%s\n" "${msg_result_yes}yes${msg_reset}" >&6 ; }
+ 	target_os=${target_os}-android
++	if test "x$cross_compiling" = xno
++then :
+ 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android API version" >&5
+ printf %s "checking for Android API version... " >&6; }
+         # hacky workaround: https://github.com/termux/termux-packages/issues/6176
+@@ -10182,6 +10184,7 @@
+      CPPFLAGS="$CPPFLAGS ${rb_opt}" ;;
+ esac
+ 	done
++fi
+ 
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext

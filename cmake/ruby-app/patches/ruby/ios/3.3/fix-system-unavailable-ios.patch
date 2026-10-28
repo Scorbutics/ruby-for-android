@@ -1,0 +1,29 @@
+--- a/vm_dump.c
++++ b/vm_dump.c
+@@ -8,6 +8,9 @@
+ 
+ **********************************************************************/
+ 
++#if defined(__APPLE__)
++# include <TargetConditionals.h>
++#endif
+ #include "ruby/internal/config.h"
+ 
+ #ifdef HAVE_UCONTEXT_H
+@@ -1097,6 +1100,8 @@
+ bool
+ rb_vm_bugreport(const void *ctx, FILE *errout)
+ {
++#if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
++    /* system() is unavailable on iOS: no RUBY_ON_BUG hook there */
+     const char *cmd = getenv("RUBY_ON_BUG");
+     if (cmd) {
+         char buf[0x100];
+@@ -1106,6 +1111,7 @@
+             snprintf(buf, sizeof(buf), "Launching RUBY_ON_BUG command failed.");
+         }
+     }
++#endif
+ 
+     // Thread unsafe best effort attempt to stop printing the bug report in an
+     // infinite loop. Can happen with corrupt Ruby stack.

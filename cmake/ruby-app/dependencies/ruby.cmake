@@ -31,6 +31,23 @@ list(APPEND RUBY_CONFIGURE_CMD
     --with-libyaml-dir=${BUILD_STAGING_DIR}/usr/local
 )
 
+# Ruby 3.2+ enables YJIT by itself when a Rust compiler is installed, which
+# makes the build depend on the build host (and broke bigdecimal's link
+# checks in CI). JIT cannot run on iOS and is not wanted on Android: never
+# build it.
+if(RUBY_VERSION VERSION_GREATER_EQUAL "3.2")
+    list(APPEND RUBY_CONFIGURE_CMD --disable-yjit)
+endif()
+
+# Ruby 3.0 still has ext/dbm (3.1 dropped it), which takes the first ndbm it
+# finds, starting with libc. Darwin's libc has one, but the header found is
+# the GDBM ndbm.h this project installs, so dbm.c references gdbm_version
+# without -lgdbm and the static ruby fails to link on iOS/macOS. Always use
+# the GDBM this project builds.
+if(RUBY_VERSION VERSION_LESS "3.1")
+    list(APPEND RUBY_CONFIGURE_CMD --with-dbm-type=gdbm_compat)
+endif()
+
 # Use BUILD_SHARED_LIBS to control Ruby build mode
 if(BUILD_SHARED_LIBS)
     list(APPEND RUBY_CONFIGURE_CMD --enable-shared)
