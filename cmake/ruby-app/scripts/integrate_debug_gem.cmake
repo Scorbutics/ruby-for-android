@@ -17,7 +17,11 @@
 # half of the gem post-install.
 #
 # Required variables:
-#   RUBY_SOURCE_DIR  - Ruby source root (after extraction + patches)
+#   RUBY_SOURCE_DIR    - Ruby source root (after extraction + patches)
+# Optional variables:
+#   DEBUG_GEM_ARCHIVE  - A downloaded debug-<X.Y.Z>.gem, for Ruby versions that
+#                        do not bundle the gem (3.0). It is unpacked where Ruby
+#                        would have bundled it, then handled the same way.
 
 cmake_minimum_required(VERSION 3.14)
 
@@ -26,6 +30,29 @@ foreach(VAR RUBY_SOURCE_DIR)
         message(FATAL_ERROR "integrate_debug_gem.cmake: ${VAR} is required")
     endif()
 endforeach()
+
+if(DEBUG_GEM_ARCHIVE)
+    # A .gem is a tar holding data.tar.gz, which holds the gem's files.
+    get_filename_component(_GEM_NAME "${DEBUG_GEM_ARCHIVE}" NAME_WE)
+    set(_GEM_DIR "${RUBY_SOURCE_DIR}/.bundle/gems/${_GEM_NAME}")
+    if(NOT EXISTS "${_GEM_DIR}/ext/debug/debug.c")
+        set(_GEM_TMP "${RUBY_SOURCE_DIR}/.bundle/tmp-${_GEM_NAME}")
+        file(REMOVE_RECURSE "${_GEM_TMP}" "${_GEM_DIR}")
+        file(MAKE_DIRECTORY "${_GEM_TMP}" "${_GEM_DIR}")
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${DEBUG_GEM_ARCHIVE}"
+            WORKING_DIRECTORY "${_GEM_TMP}" RESULT_VARIABLE _RES)
+        if(NOT _RES EQUAL 0 OR NOT EXISTS "${_GEM_TMP}/data.tar.gz")
+            message(FATAL_ERROR "Cannot unpack ${DEBUG_GEM_ARCHIVE} (no data.tar.gz)")
+        endif()
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf "${_GEM_TMP}/data.tar.gz"
+            WORKING_DIRECTORY "${_GEM_DIR}" RESULT_VARIABLE _RES)
+        file(REMOVE_RECURSE "${_GEM_TMP}")
+        if(NOT _RES EQUAL 0)
+            message(FATAL_ERROR "Cannot unpack the files of ${DEBUG_GEM_ARCHIVE}")
+        endif()
+        message(STATUS "Unpacked ${_GEM_NAME} into ${_GEM_DIR}")
+    endif()
+endif()
 
 # Auto-detect the bundled debug gem dir from the Ruby source tree. Ruby ships
 # exactly one debug-<X.Y.Z>/ here; the version is coupled to the Ruby release

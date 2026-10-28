@@ -1,11 +1,11 @@
 # ruby.cmake
 # Configuration for Ruby itself
+#
+# RUBY_VERSION, RUBY_MAJOR_VERSION, RUBY_ABI_VERSION and RUBY_TARBALL_SHA256
+# come from ruby-versions.cmake.
 
-set(RUBY_MAJOR_VERSION "3.1")
-set(RUBY_VERSION "3.1.1")
-set(RUBY_ABI_VERSION "3.1.0")  # Ruby ABI version used in include/lib paths
-set(RUBY_URL "http://ftp.ruby-lang.org/pub/ruby/${RUBY_MAJOR_VERSION}/ruby-${RUBY_VERSION}.tar.xz")
-set(RUBY_HASH "SHA256=7aefaa6b78b076515d272ec59c4616707a54fc9f2391239737d5f10af7a16caa")
+set(RUBY_URL "https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR_VERSION}/ruby-${RUBY_VERSION}.tar.xz")
+set(RUBY_HASH "SHA256=${RUBY_TARBALL_SHA256}")
 
 # Configure command (autoconf-based)
 # --with-opt-dir: Tell Ruby where to find external libraries (zlib, openssl, readline, gdbm)
@@ -20,6 +20,16 @@ set(RUBY_CONFIGURE_CMD
     --with-opt-dir=${BUILD_STAGING_DIR}/usr
     --with-openssl-dir=${BUILD_STAGING_DIR}/usr/local
 )
+
+# Ruby 3.2 stopped bundling libffi (ext/fiddle) and libyaml (ext/psych), so
+# both extensions now need the libraries this project builds. They install
+# under usr/local, outside --with-opt-dir.
+if(RUBY_VERSION VERSION_GREATER_EQUAL "3.2")
+    list(APPEND RUBY_CONFIGURE_CMD
+        --with-libffi-dir=${BUILD_STAGING_DIR}/usr/local
+        --with-libyaml-dir=${BUILD_STAGING_DIR}/usr/local
+    )
+endif()
 
 # Use BUILD_SHARED_LIBS to control Ruby build mode
 if(BUILD_SHARED_LIBS)
@@ -65,6 +75,9 @@ set(RUBY_INSTALL_CMD
 # Static dependencies: zlib, gmp, libxcrypt (Linux only)
 # Shared dependencies from system: openssl, gdbm, readline, ncurses
 set(RUBY_DEPENDENCIES zlib gmp libffi openssl gdbm readline)
+if(RUBY_NEEDS_LIBYAML)
+    list(APPEND RUBY_DEPENDENCIES libyaml)
+endif()
 
 # Add libxcrypt for Linux builds only (Android's Bionic doesn't provide crypt)
 if(TARGET_PLATFORM STREQUAL "Linux")
@@ -99,12 +112,28 @@ add_external_dependency(
     INSTALL_COMMAND ${RUBY_INSTALL_CMD}
     ENV_VARS ${RUBY_ENV_VARS}
     DEPENDS ${RUBY_DEPENDENCIES}
+    STRICT_PATCHES
 )
 
 # Recompute SOURCE_DIR the way BuildHelpers does it (see line 87) so we can
 # attach extra steps to the externalproject. ExternalProject_Get_Property
 # would work too but requires the project to be finalized.
 set(_RUBY_SOURCE_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}/ruby-${RUBY_VERSION}")
+
+# Ruby bundles the `debug` gem since 3.1. For older versions, fetch the same
+# release 3.3 bundles (it supports Ruby >= 2.7) so remote DAP debugging works
+# the same on every build.
+set(_DEBUG_GEM_ARCHIVE "")
+if(RUBY_VERSION VERSION_LESS "3.1")
+    set(_DEBUG_GEM_VERSION "1.9.2")
+    set(_DEBUG_GEM_ARCHIVE "${BUILD_DOWNLOAD_DIR}/debug-${_DEBUG_GEM_VERSION}.gem")
+    file(DOWNLOAD
+        "https://rubygems.org/downloads/debug-${_DEBUG_GEM_VERSION}.gem"
+        "${_DEBUG_GEM_ARCHIVE}"
+        EXPECTED_HASH SHA256=48e026c0852c7a10c60263e2e527968308958e266231e36d64e3efcabec7e7fc
+        TLS_VERIFY ON
+    )
+endif()
 
 # Promote the bundled `debug` gem to a first-class Ruby ext so it gets
 # statically linked alongside socket / io_console / objspace. See the script
@@ -113,6 +142,7 @@ set(_RUBY_SOURCE_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFO
 ExternalProject_Add_Step(ruby_external integrate_debug_gem
     COMMAND ${CMAKE_COMMAND}
         -DRUBY_SOURCE_DIR=${_RUBY_SOURCE_DIR}
+        -DDEBUG_GEM_ARCHIVE=${_DEBUG_GEM_ARCHIVE}
         -P ${CMAKE_CURRENT_LIST_DIR}/../scripts/integrate_debug_gem.cmake
     DEPENDEES patch
     DEPENDERS configure
@@ -146,6 +176,7 @@ if(NOT BUILD_SHARED_LIBS)
             -DRUBY_VERSION=${RUBY_VERSION}
             -DOUTPUT_LIB=${RUBY_EXT_LIB}
             -DCROSS_AR=${CROSS_AR}
+            -DSTAGING_LIB_DIR=${BUILD_STAGING_DIR}/usr/local/lib
             -P ${CMAKE_CURRENT_LIST_DIR}/../scripts/combine_ruby_extensions.cmake
         DEPENDS ruby_external
         COMMENT "Combining Ruby extension .a files into libruby-ext.a"

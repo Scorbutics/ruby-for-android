@@ -74,8 +74,9 @@ if(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby-ext.a")
     list(APPEND LIBS -lruby-ext)
 endif()
 # Ruby depends on these (order matters for static linking):
-# Note: libffi and libyaml are bundled inside Ruby (ext/fiddle, ext/psych)
-# and their symbols are in libruby-ext.a, not separate .a files.
+# Note: libffi and libyaml are bundled inside Ruby (ext/fiddle, ext/psych) up to
+# 3.1, and folded into libruby-ext.a by combine_ruby_extensions.cmake from 3.2:
+# either way their symbols are in libruby-ext.a, not separate .a files.
 list(APPEND LIBS -lssl -lcrypto -lgdbm -lreadline -lncurses -lgmp -lz)
 
 # Platform-specific system libraries
@@ -90,10 +91,14 @@ elseif(TARGET_PLATFORM STREQUAL "macOS")
     list(APPEND LIBS -lm)
     # Ruby uses CoreFoundation on macOS for Unicode path normalization
     list(APPEND LIBS -framework CoreFoundation)
+    # Ruby 3.0 seeds its PRNG with SecRandomCopyBytes on Apple platforms
+    list(APPEND LIBS -framework Security)
 elseif(TARGET_PLATFORM STREQUAL "iOS")
     list(APPEND LIBS -lm)
     # iOS needs system framework for startup code
     list(APPEND LIBS -framework Foundation)
+    # Ruby 3.0 seeds its PRNG with SecRandomCopyBytes on Apple platforms
+    list(APPEND LIBS -framework Security)
 endif()
 
 # --- Run the compiler ---

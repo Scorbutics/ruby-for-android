@@ -5,6 +5,7 @@
 include(ExternalProject)
 
 include(PlatformDetection)
+include(PlatformPatches)       # get_platform_patches(), also usable from cmake -P
 
 # Captured at include time so functions in this file can resolve sibling
 # helper scripts. CMAKE_CURRENT_FUNCTION_LIST_DIR would be cleaner but
@@ -54,9 +55,11 @@ set(BUILD_PARALLEL_JOBS ${NCPUS} CACHE STRING "Number of parallel build jobs")
 #                             Format: VAR1=value1 VAR2=value2
 #                             These override/extend variables from BUILD_ENV
 #   PATCH_DIR               - Directory containing patches (optional, defaults to cmake/patches/${NAME})
+#   STRICT_PATCHES          - Fail the build when a patch does not apply (option). Without it,
+#                             a patch that does not apply is skipped silently.
 #
 function(add_external_dependency)
-    set(options "")
+    set(options STRICT_PATCHES)
     set(oneValueArgs NAME VERSION URL_HASH ARCHIVE_NAME PATCH_DIR
                      GIT_REPOSITORY GIT_TAG GIT_SHALLOW GIT_SUBMODULES_RECURSE
                      BUILD_IN_SOURCE)
@@ -147,9 +150,16 @@ function(add_external_dependency)
                 
                 foreach(PATCH_PATH ${PATCH_LIST})
                     get_filename_component(PATCH_FILE "${PATCH_PATH}" NAME)
-                    # Use --forward to skip already-applied patches, --reject-file=- to discard rejects
-                    # and || true to continue even if patch is already applied
-                    list(APPEND PATCH_CMD COMMAND patch -p1 --forward --reject-file=- -i "${PATCH_PATH}" || true)
+                    if(DEP_STRICT_PATCHES)
+                        # Skip a patch only when it is already applied (it reverses
+                        # cleanly); otherwise it must apply, or the build stops.
+                        list(APPEND PATCH_CMD COMMAND sh -c
+                            "patch -p1 -R -s -f --dry-run -i '${PATCH_PATH}' >/dev/null 2>&1 || patch -p1 -f --no-backup-if-mismatch -i '${PATCH_PATH}'")
+                    else()
+                        # Use --forward to skip already-applied patches, --reject-file=- to discard rejects
+                        # and || true to continue even if patch is already applied
+                        list(APPEND PATCH_CMD COMMAND patch -p1 --forward --reject-file=- -i "${PATCH_PATH}" || true)
+                    endif()
                     list(APPEND PATCH_CMD COMMAND ${CMAKE_COMMAND} -E echo "  Applied: ${PATCH_FILE}")
                 endforeach()
             endif()
@@ -245,94 +255,6 @@ function(add_external_dependency)
     )
 endfunction()
 
-#
-# get_platform_patches()
-#
-# Build a list of all matching patches for a library/platform/version combination
-# Supports organized patch directory structure with series files
-#
-# Parameters:
-#   LIBRARY     - Library name (e.g., "openssl", "ncurses")
-#   VERSION     - Library version
-#   PLATFORM    - Platform name (e.g., "android", "ios", "linux")
-#   PATCH_BASE  - Base directory for patches (optional, defaults to cmake/patches)
-#   OUTPUT_VAR  - Variable name to store the list of patch paths
-#
-function(get_platform_patches)
-    set(options "")
-    set(oneValueArgs LIBRARY VERSION PLATFORM PATCH_BASE BUILD_TYPE OUTPUT_VAR)
-    set(multiValueArgs "")
-    cmake_parse_arguments(PATCH "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-    if(NOT PATCH_PATCH_BASE)
-        set(PATCH_PATCH_BASE "${CMAKE_SOURCE_DIR}/cmake/patches")
-    endif()
-
-    set(PATCH_BASE "${PATCH_PATCH_BASE}/${PATCH_LIBRARY}")
-
-    # Patch search order:
-    # 1. Platform + version specific: patches/{library}/{platform}/{version}/
-    # 2. Platform specific: patches/{library}/{platform}/
-    # 3. Version specific: patches/{library}/{version}/
-    # 4. Common: patches/{library}/common/
-
-    set(PATCH_SEARCH_PATHS
-        "${PATCH_BASE}/${PATCH_PLATFORM}/${PATCH_VERSION}"
-        "${PATCH_BASE}/${PATCH_PLATFORM}"
-        "${PATCH_BASE}/${PATCH_VERSION}"
-        "${PATCH_BASE}/common"
-    )
-
-    message(STATUS "  Patch base: ${PATCH_BASE}")
-    message(STATUS "  Patch search paths: ${PATCH_SEARCH_PATHS}")
-
-    set(COLLECTED_PATCHES "")
-
-    foreach(SEARCH_PATH ${PATCH_SEARCH_PATHS})
-        if(EXISTS "${SEARCH_PATH}")
-            message(STATUS "  [EXISTS] ${SEARCH_PATH}")
-        else()
-            message(STATUS "  [MISSING] ${SEARCH_PATH}")
-        endif()
-        if(EXISTS "${SEARCH_PATH}/series")
-            # Read patch series file
-            file(STRINGS "${SEARCH_PATH}/series" PATCH_LIST)
-            foreach(PATCH_FILE ${PATCH_LIST})
-                string(STRIP "${PATCH_FILE}" PATCH_FILE)
-                # Skip comments and empty lines
-                if(NOT PATCH_FILE MATCHES "^#" AND NOT PATCH_FILE STREQUAL "")
-                    # Parse optional build-type condition: "file.patch [shared]" or "file.patch [static]"
-                    set(PATCH_CONDITION "")
-                    if(PATCH_FILE MATCHES "^(.+[^ \t])[ \t]+\\[([a-zA-Z]+)\\]$")
-                        set(PATCH_FILE "${CMAKE_MATCH_1}")
-                        set(PATCH_CONDITION "${CMAKE_MATCH_2}")
-                    endif()
-
-                    # Skip patch if build-type condition doesn't match
-                    if(PATCH_CONDITION AND PATCH_BUILD_TYPE AND NOT PATCH_CONDITION STREQUAL PATCH_BUILD_TYPE)
-                        message(STATUS "    Skipping ${PATCH_FILE} (condition [${PATCH_CONDITION}], build type: ${PATCH_BUILD_TYPE})")
-                        continue()
-                    endif()
-
-                    set(PATCH_PATH "${SEARCH_PATH}/${PATCH_FILE}")
-                    if(EXISTS "${PATCH_PATH}")
-                        list(APPEND COLLECTED_PATCHES "${PATCH_PATH}")
-                    endif()
-                endif()
-            endforeach()
-        else()
-            # No series file, apply all .patch files in alphabetical order
-            file(GLOB PATCHES "${SEARCH_PATH}/*.patch")
-            list(SORT PATCHES)
-            foreach(PATCH_PATH ${PATCHES})
-                list(APPEND COLLECTED_PATCHES "${PATCH_PATH}")
-            endforeach()
-        endif()
-    endforeach()
-
-    # Return the collected patches list
-    set(${PATCH_OUTPUT_VAR} ${COLLECTED_PATCHES} PARENT_SCOPE)
-endfunction()
 
 #
 # create_archive_target()

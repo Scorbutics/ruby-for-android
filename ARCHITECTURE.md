@@ -2,8 +2,14 @@
 
 ## Overview
 
-Cross-compile CRuby 3.1.1 (MRI) as a Position Independent Executable (PIE) for Unix-based
+Cross-compile CRuby (MRI) as a Position Independent Executable (PIE) for Unix-based
 platforms including Android 8+ (API 26) and iOS.
+
+One build targets one Ruby version, selected with `./configure --with-ruby-version=X.Y.Z`
+(default and supported list: `cmake/ruby-app/ruby-versions.cmake`). Ruby bytecode only loads
+on the minor version that compiled it, and Pokemon Studio compiles with Ruby 3.0 (Windows),
+3.2 (macOS) and 3.3 (Linux), so each of these gets its own release. A tag
+`v<ruby version>-<build number>` (e.g. `v3.2.11-1`) builds and releases that Ruby version.
 
 Forked from https://github.com/sfrieske/ruby-for-android5 (2015, now outdated).
 
@@ -27,7 +33,8 @@ ncurses → readline → ruby
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| Ruby       | 3.1.1   | Main CRuby interpreter |
+| Ruby       | 3.0.7 / 3.1.1 / 3.2.11 / 3.3.13 | Main CRuby interpreter |
+| libyaml    | 0.2.5   | YAML for psych (Ruby 3.2+ only; bundled before) |
 | OpenSSL    | 1.1.1m  | SSL/TLS support |
 | GDBM       | 1.18.1  | DBM database support |
 | ncurses    | 6.4     | Terminal control |
@@ -61,7 +68,12 @@ cmake/ruby-app/    Ruby application layer
 ## Patch Categories
 
 1. **Android SONAME versioning removal** — Android's linker expects unversioned `.so` files
-2. **Ruby type redefinition fix** (Ruby 3.0.0 only, not needed for 3.1.1+)
+2. **Ruby type redefinition fix** (Ruby 3.0.0 only, not needed for 3.0.7+)
+
+Patches are picked from `patches/{lib}/{platform}/{version}/`, `{platform}/{major.minor}/`,
+`{platform}/`, `{version}/`, `{major.minor}/` and `common/`. A `series` entry can carry
+conditions: a build type (`[static]`, `[shared]`) or a version range (`[>=3.1]`, `[<3.2]`).
+Ruby patches are strict: a patch that does not apply fails the build instead of being skipped.
 3. **OpenSSL NDK r22+ support** (OpenSSL 1.1.1k only, not needed for 1.1.1m+)
 4. **GDBM GCC 10 link fix** (Linux only)
 
@@ -69,7 +81,7 @@ cmake/ruby-app/    Ruby application layer
 
 `./target/ruby_full-{platform}-{arch}.zip` contains:
 - All shared libraries (libruby, libssl, libcrypto, libgdbm, libncurses, libreadline)
-- Complete Ruby 3.1.0 stdlib + native extensions
+- Complete Ruby stdlib (`lib/ruby/<major.minor>.0/`) + native extensions
 - Ruby executables (ruby, irb, gem, rake, bundle)
 - `setup_ruby.sh` environment setup script
 

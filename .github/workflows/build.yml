@@ -5,6 +5,11 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
+      ruby_version:
+        description: "Ruby version to build (one of RUBY_SUPPORTED_VERSIONS in cmake/ruby-app/ruby-versions.cmake)"
+        required: true
+        default: "3.0.7"
+        type: string
       create_release:
         description: "Create a GitHub release with the built artifacts"
         required: false
@@ -12,7 +17,44 @@ on:
         type: boolean
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Ruby version: from the tag on push (v<ruby version>-<build number>, e.g.
+  # v3.2.11-1), from the input on manual runs. One release per Ruby version.
+  # ---------------------------------------------------------------------------
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      ruby_version: ${{ steps.version.outputs.ruby_version }}
+    steps:
+      - name: Determine Ruby version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            if ! [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-[0-9]+$ ]]; then
+              echo "::error::Tag '$TAG' does not match v<ruby version>-<build number> (e.g. v3.0.7-1)"
+              exit 1
+            fi
+            RUBY_VERSION="${BASH_REMATCH[1]}"
+          else
+            RUBY_VERSION="${{ inputs.ruby_version }}"
+          fi
+          echo "ruby_version=$RUBY_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Ruby version: $RUBY_VERSION"
+
+  # Every Ruby patch the build selects must apply, on every supported Ruby
+  # version and platform (Ruby patches are strict). Cheap, so it gates the builds.
+  check-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Ruby patches
+        run: cmake -DWORK_DIR="$RUNNER_TEMP/ruby-patches" -P cmake/ruby-app/tests/check_ruby_patches.cmake
+
   build:
+    needs: [prepare, check-patches]
     strategy:
       fail-fast: false
       matrix:
@@ -83,9 +125,10 @@ jobs:
             build-essential cmake ruby-dev ninja-build \
             libtool autoconf automake libncurses-dev \
             zip unzip wget gettext patch
-          # Remove system libffi-dev and libyaml-dev so Ruby's configure uses
-          # its bundled versions (ext/fiddle/libffi, ext/psych/yaml).
-          # This ensures the static symbols end up in libruby-ext.a.
+          # Remove system libffi-dev and libyaml-dev so Ruby never links them:
+          # Ruby 3.0/3.1 use their bundled copies (ext/fiddle/libffi,
+          # ext/psych/yaml), Ruby 3.2+ the libffi/libyaml this project builds.
+          # Either way the static symbols end up in libruby-ext.a.
           sudo apt-get remove -y libffi-dev libyaml-dev 2>/dev/null || true
 
       - name: Install build dependencies (macOS)
@@ -104,6 +147,7 @@ jobs:
           ./configure \
             --with-toolchain-params=${{ matrix.toolchain }} \
             --build-dir=build-${{ matrix.platform }} \
+            --with-ruby-version=${{ needs.prepare.outputs.ruby_version }} \
             $STATIC_FLAG
 
       - name: Configure (local)
@@ -117,6 +161,7 @@ jobs:
             --without-docker \
             --with-toolchain-params=${{ matrix.toolchain }} \
             --build-dir=build-${{ matrix.platform }} \
+            --with-ruby-version=${{ needs.prepare.outputs.ruby_version }} \
             $STATIC_FLAG
 
       # --- Build ---
@@ -154,7 +199,7 @@ jobs:
   # Create GitHub Release (on tag push or manual trigger)
   # ---------------------------------------------------------------------------
   release:
-    needs: build
+    needs: [prepare, build]
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
     runs-on: ubuntu-latest
     name: Create Release
@@ -180,7 +225,7 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=v$(date +%Y%m%d)-manual" >> "$GITHUB_OUTPUT"
+            echo "tag=v${{ needs.prepare.outputs.ruby_version }}-$(date +%Y%m%d)-manual" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create Release
@@ -189,7 +234,7 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Ruby Libraries ${{ steps.tag.outputs.tag }}
           body: |
-            Prebuilt Ruby 3.1.1 libraries for all supported platforms.
+            Prebuilt Ruby ${{ needs.prepare.outputs.ruby_version }} libraries for all supported platforms.
 
             ## Platforms
             - `android-arm64` — Android ARM64 (static)

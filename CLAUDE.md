@@ -8,7 +8,9 @@
 
 ## What This Project Does
 
-Cross-compiles CRuby 3.1.1 as a PIE for Android 8+ (API 26), Linux, and planned iOS/macOS.
+Cross-compiles CRuby as a PIE for Android 8+ (API 26), Linux, iOS and macOS. One build
+targets one Ruby version (3.0.7, 3.1.1, 3.2.11 or 3.3.13; default in
+`cmake/ruby-app/ruby-versions.cmake`), selected with `./configure --with-ruby-version=X.Y.Z`.
 Output: `ruby_full-{platform}-{arch}.zip` (~27MB full Ruby environment).
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design, patch categories, and artifact structure.
@@ -28,6 +30,9 @@ make install
 
 # Specific toolchain
 ./configure --with-toolchain-params=arm64-v8a-android-toolchain.params
+
+# Specific Ruby version
+./configure --with-ruby-version=3.2.11
 
 # See all options
 ./configure --help
@@ -71,11 +76,24 @@ build/                      Generated build directory (gitignored)
 target/                     Final artifacts (gitignored)
 ```
 
+## Releases
+
+One release per Ruby version: pushing tag `v<ruby version>-<build number>` (e.g. `v3.0.7-1`)
+builds every platform for that Ruby version. Adding a version means adding its tarball
+SHA-256 to `RUBY_SUPPORTED_VERSIONS` and checking that every Ruby patch still applies
+(Ruby patches are strict, the build fails otherwise).
+
 ## Testing
+
+Check that every Ruby patch applies on every supported version and platform
+(downloads each Ruby tarball once into WORK_DIR; CI runs it before the builds):
+```bash
+cmake -DWORK_DIR=/tmp/ruby-patches -P cmake/ruby-app/tests/check_ruby_patches.cmake
+```
 
 Deploy `ruby_full-{platform}.zip` to target, extract, then:
 ```bash
-. setup_ruby.sh /path/to/ruby 3.1.0 aarch64
+. setup_ruby.sh /path/to/ruby <major.minor>.0 aarch64
 ruby -e "puts RUBY_VERSION"
 ruby -e "require 'openssl'; puts OpenSSL::OPENSSL_VERSION"
 ```

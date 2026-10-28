@@ -3,3 +3,5 @@
 
 # Remove version suffix from SONAME (required for Android linker)
 remove-version-from-soname.patch
+# Same for the libffi copy fiddle bundled until Ruby 3.2
+remove-version-from-bundled-libffi-soname.patch [<3.2]

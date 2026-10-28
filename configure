@@ -16,6 +16,9 @@ PREFIX="/usr/local"
 BUILD_DIR="build"
 ENABLE_SHARED=1
 DEPS_ONLY=0
+# Empty: the default of cmake/ruby-app/ruby-versions.cmake. Not RUBY_VERSION,
+# which version managers such as chruby export.
+CRUBY_VERSION=""
 
 # Parse command-line arguments
 show_help() {
@@ -33,6 +36,8 @@ Configuration Options:
   --enable-static           Build static libraries (.a) instead of shared (.so)
   --enable-shared           Build shared libraries (.so) - default
   --deps-only               Build only dependencies, skip Ruby itself
+  --with-ruby-version=X.Y.Z Ruby version to build (see RUBY_SUPPORTED_VERSIONS in
+                            cmake/ruby-app/ruby-versions.cmake)
   --help                    Display this help message
 
 Examples:
@@ -40,6 +45,7 @@ Examples:
   ./configure --enable-static
   ./configure --without-docker --with-toolchain-params=x86_64-linux-toolchain.params
   ./configure --with-toolchain-params=x86_64-android-toolchain.params --prefix=/opt/ruby
+  ./configure --with-ruby-version=3.2.11
 
 Environment Variables:
   ANDROID_NDK              Path to Android NDK (for Android builds)
@@ -82,6 +88,10 @@ while [ $# -gt 0 ]; do
 			;;
 		--deps-only)
 			DEPS_ONLY=1
+			shift
+			;;
+		--with-ruby-version=*)
+			CRUBY_VERSION="${1#*=}"
 			shift
 			;;
 		--help|-h)
@@ -205,6 +215,7 @@ fi
 if [ $DEPS_ONLY -eq 1 ]; then
 	echo "Dependencies only: yes (Ruby will be skipped)"
 fi
+echo "Ruby version: ${CRUBY_VERSION:-(default)}"
 
 # Generate Makefile
 echo "Generating Makefile..."
@@ -224,6 +235,7 @@ BUILD_DIR=@BUILD_DIR@
 ROOT_DIR=@ROOT_DIR@
 ENABLE_SHARED=@ENABLE_SHARED@
 DEPS_ONLY=@DEPS_ONLY@
+CRUBY_VERSION=@CRUBY_VERSION@
 PROJECT_NAME=ruby-for-android
 CONTAINER=$(PROJECT_NAME)_dev
 DOCKER_WORKDIR=/opt/current
@@ -359,11 +371,13 @@ configure-cmake: docker-init
 				-DCMAKE_TOOLCHAIN_FILE=$$ANDROID_NDK/build/cmake/android.toolchain.cmake \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
 				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
+				$(if $(CRUBY_VERSION),-DRUBY_VERSION=$(CRUBY_VERSION)) \
 				$$SOURCE_DIR; \
 		else \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
 				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
+				$(if $(CRUBY_VERSION),-DRUBY_VERSION=$(CRUBY_VERSION)) \
 				$$SOURCE_DIR; \
 		fi'
 
@@ -484,11 +498,13 @@ configure-cmake:
 				-DCMAKE_TOOLCHAIN_FILE=$$ANDROID_NDK/build/cmake/android.toolchain.cmake \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
 				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
+				$(if $(CRUBY_VERSION),-DRUBY_VERSION=$(CRUBY_VERSION)) \
 				..; \
 		else \
 			cmake $$(cat $$TOOLCHAIN_PARAMS_FILE) \
 				-DENABLE_SHARED=$$CMAKE_ENABLE_SHARED \
 				-DBUILD_DEPS_ONLY=$$CMAKE_DEPS_ONLY \
+				$(if $(CRUBY_VERSION),-DRUBY_VERSION=$(CRUBY_VERSION)) \
 				..; \
 		fi
 
@@ -674,6 +690,7 @@ sed \
 	-e "s|@ROOT_DIR@|$ROOT_DIR|g" \
 	-e "s|@ENABLE_SHARED@|$ENABLE_SHARED|g" \
 	-e "s|@DEPS_ONLY@|$DEPS_ONLY|g" \
+	-e "s|@CRUBY_VERSION@|$CRUBY_VERSION|g" \
 	"$ROOT_DIR/Makefile" > "$ROOT_DIR/Makefile.new"
 
 # Insert package clean and log targets

@@ -13,7 +13,7 @@ if [ -z "$BUILD_LOG" ] || [ ! -f "$BUILD_LOG" ]; then
 fi
 
 # Critical extensions that require external dependencies
-CRITICAL_EXTS="zlib openssl readline dbm"
+CRITICAL_EXTS="zlib openssl readline dbm psych fiddle"
 
 echo "Checking for missing critical Ruby extensions..."
 
@@ -44,6 +44,8 @@ if grep -q "Following extensions are not compiled:" "$BUILD_LOG"; then
         echo "  - openssl: SSL/TLS and crypto (required for HTTPS)" >&2
         echo "  - readline: line editing in IRB" >&2
         echo "  - dbm: DBM database support" >&2
+        echo "  - psych: YAML (libyaml, a separate dependency since Ruby 3.2)" >&2
+        echo "  - fiddle: FFI (libffi, a separate dependency since Ruby 3.2)" >&2
         echo "" >&2
         echo "Full error details:" >&2
         awk '/Following extensions are not compiled:/,/Fix the problems/' "$BUILD_LOG" >&2

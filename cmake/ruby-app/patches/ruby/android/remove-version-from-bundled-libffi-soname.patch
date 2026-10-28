@@ -1,0 +1,21 @@
+--- a/ext/fiddle/libffi-3.2.1/configure
++++ b/ext/fiddle/libffi-3.2.1/configure
+@@ -11642,7 +11642,7 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu)
+   need_lib_prefix=no
+   need_version=no
+   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
+-  soname_spec='${libname}${release}${shared_ext}$major'
++  soname_spec='${libname}${shared_ext}'
+   finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'
+   shlibpath_var=LD_LIBRARY_PATH
+   shlibpath_overrides_runpath=no
+
+@@ -15477,7 +15477,7 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu)
+   need_lib_prefix=no
+   need_version=no
+   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
+-  soname_spec='${libname}${release}${shared_ext}$major'
++  soname_spec='${libname}${shared_ext}'
+   finish_cmds='PATH="\$PATH:/sbin" ldconfig -n $libdir'
+   shlibpath_var=LD_LIBRARY_PATH
+   shlibpath_overrides_runpath=no

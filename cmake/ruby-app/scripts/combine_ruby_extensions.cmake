@@ -68,6 +68,25 @@ endforeach()
 # Use the filtered list
 set(ALL_EXT_LIBS ${FILTERED_EXT_LIBS})
 
+# Ruby 3.2+ no longer bundles libffi (fiddle) and libyaml (psych): both
+# extensions link the libraries this project builds instead. Fold those into
+# libruby-ext.a too, so consumers link the same set of archives whatever the
+# Ruby version.
+if(NOT SEEN_LIBFFI)
+    if(NOT STAGING_LIB_DIR OR NOT EXISTS "${STAGING_LIB_DIR}/libffi.a")
+        message(FATAL_ERROR "No bundled libffi in ${RUBY_SRC_DIR}/ext/fiddle and no libffi.a in STAGING_LIB_DIR='${STAGING_LIB_DIR}'")
+    endif()
+    message(STATUS "  Including external libffi: ${STAGING_LIB_DIR}/libffi.a")
+    list(APPEND ALL_EXT_LIBS "${STAGING_LIB_DIR}/libffi.a")
+endif()
+if(NOT EXISTS "${RUBY_SRC_DIR}/ext/psych/yaml")
+    if(NOT STAGING_LIB_DIR OR NOT EXISTS "${STAGING_LIB_DIR}/libyaml.a")
+        message(FATAL_ERROR "No bundled libyaml in ${RUBY_SRC_DIR}/ext/psych and no libyaml.a in STAGING_LIB_DIR='${STAGING_LIB_DIR}'")
+    endif()
+    message(STATUS "  Including external libyaml: ${STAGING_LIB_DIR}/libyaml.a")
+    list(APPEND ALL_EXT_LIBS "${STAGING_LIB_DIR}/libyaml.a")
+endif()
+
 if(NOT ALL_EXT_LIBS)
     message(FATAL_ERROR "No extension .a files found in ${RUBY_SRC_DIR}")
 endif()
