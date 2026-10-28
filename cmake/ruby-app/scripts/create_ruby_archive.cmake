@@ -235,6 +235,15 @@ endif()
 message(STATUS "Creating ruby-stdlib.zip...")
 set(RUBY_STDLIB_DIR "${BUILD_STAGING_DIR}/usr/local/lib/ruby")
 
+# The default gem specifications must be under the packaged lib/ruby/gems: a
+# cross build's install once put them wherever the host Ruby's rubygems
+# pointed (Homebrew, Debian) without failing, shipping a stdlib without gems.
+set(_DEFAULT_SPECS_DIR "${RUBY_STDLIB_DIR}/gems/${RUBY_ABI_VERSION}/specifications/default")
+file(GLOB _DEFAULT_SPECS "${_DEFAULT_SPECS_DIR}/*.gemspec")
+if(NOT _DEFAULT_SPECS)
+    message(FATAL_ERROR "No default gem specifications in ${_DEFAULT_SPECS_DIR}: the gems were installed elsewhere")
+endif()
+
 # Create temporary directory for the archive
 set(TEMP_STDLIB_DIR "${CMAKE_BINARY_DIR}/temp_stdlib")
 file(REMOVE_RECURSE "${TEMP_STDLIB_DIR}")
@@ -255,7 +264,8 @@ foreach(ENTRY ${RUBY_STDLIB_ENTRIES})
             get_filename_component(VERSION_ENTRY_NAME "${VERSION_ENTRY}" NAME)
 
             # Skip ALL platform-specific directories (match arch patterns)
-            if(VERSION_ENTRY_NAME MATCHES "^(x86_64|aarch64|arm|i686|powerpc|riscv|mips|s390)-")
+            # (arm64: the Apple RUBY_PLATFORM is arm64-darwin)
+            if(VERSION_ENTRY_NAME MATCHES "^(x86_64|aarch64|arm64|arm|i686|powerpc|riscv|mips|s390)-")
                 # Skip platform-specific directory from previous or current builds
             else()
                 if(IS_DIRECTORY "${VERSION_ENTRY}")
