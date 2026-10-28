@@ -179,6 +179,14 @@ jobs:
             cmake --build build-${{ matrix.platform }} --target link_test
           fi
 
+      # --- Foreign bytecode test (builds whose miniruby runs on the runner) ---
+      - name: Foreign bytecode test
+        if: matrix.platform == 'linux-x86_64' || matrix.platform == 'macos-arm64'
+        run: |
+          MINIRUBY=$(ls build-${{ matrix.platform }}/ruby/build_dir/*/ruby-*/miniruby)
+          cmake -DMINIRUBY="$MINIRUBY" -DWORK_DIR="$RUNNER_TEMP/foreign-bytecode" \
+            -P cmake/ruby-app/tests/check_foreign_bytecode.cmake
+
       # --- Install (produces ZIP) ---
       - name: Install
         run: make install

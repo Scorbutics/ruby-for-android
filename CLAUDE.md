@@ -97,6 +97,15 @@ the two `escape.a` of Ruby 3.2+) and folds the external libyaml/libffi (host C c
 cmake -DWORK_DIR=/tmp/combine-check -P cmake/ruby-app/tests/check_combine_extensions.cmake
 ```
 
+Check that the built Ruby loads the bytecode of Pokemon Studio's other platforms
+(`load-foreign-bytecode.patch`: 32-bit Windows bytecode on 3.0, macOS on 3.2) exactly
+like native bytecode; needs a miniruby that runs on the host (CI: linux-x86_64,
+macos-arm64). Fixtures and how they were made: `cmake/ruby-app/tests/foreign_bytecode/`.
+```bash
+cmake -DMINIRUBY=build/ruby/build_dir/<arch>/ruby-<version>/miniruby \
+      -P cmake/ruby-app/tests/check_foreign_bytecode.cmake
+```
+
 Deploy `ruby_full-{platform}.zip` to target, extract, then:
 ```bash
 . setup_ruby.sh /path/to/ruby <major.minor>.0 aarch64

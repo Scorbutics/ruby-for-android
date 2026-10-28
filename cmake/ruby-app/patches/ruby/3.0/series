@@ -10,3 +10,10 @@ fix-darwin-static-ext-bundle-loader.patch
 # operating_system.rb may redirect it (Debian /var/lib/gems, Homebrew
 # /opt/homebrew), so make install fails. Use the target RbConfig instead.
 fix-rbinstall-default-gem-dir.patch
+
+# Pokemon Studio games ship bytecode compiled by the Ruby of the OS that built
+# them: Studio's Windows Ruby is 32-bit (i386-mingw32), so its bytecode names
+# another platform and stores 4-byte words. Accept it (and the 64-bit Linux/macOS
+# dumps) and widen its words while loading. Also detects the bytecode of Ruby
+# 3.0.0-3.0.2, whose iseq bodies lack outer_variables (same format version).
+load-foreign-bytecode.patch

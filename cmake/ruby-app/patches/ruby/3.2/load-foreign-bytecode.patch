@@ -1,0 +1,50 @@
+--- a/compile.c
++++ b/compile.c
+@@ -13256,6 +13256,36 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
+     }
+ }
+ 
++/*
++ * Pokemon Studio ships games as bytecode compiled by the Ruby of the OS it
++ * runs on, so the bytecode of a game names that platform (its macOS build is
++ * the Ruby 3.2 one). The 64-bit little-endian Linux and macOS dumps (LP64,
++ * flonum) have the native layout of every 64-bit little-endian LP64 target:
++ * accept them too.
++ */
++static int
++ibf_platform_prefix_p(const char *platform, const char *prefix)
++{
++    return strncmp(platform, prefix, strlen(prefix)) == 0;
++}
++
++static void
++ibf_load_check_platform(const char *platform)
++{
++    if (strcmp(platform, RUBY_PLATFORM) == 0) {
++        return;
++    }
++#if SIZEOF_VALUE == 8 && SIZEOF_LONG == 8 && USE_FLONUM && !defined(WORDS_BIGENDIAN)
++    if (ibf_platform_prefix_p(platform, "x86_64-linux") ||
++        ibf_platform_prefix_p(platform, "aarch64-linux") ||
++        ibf_platform_prefix_p(platform, "x86_64-darwin") ||
++        ibf_platform_prefix_p(platform, "arm64-darwin")) {
++        return;
++    }
++#endif
++    rb_raise(rb_eRuntimeError, "unmatched platform");
++}
++
+ static void
+ ibf_load_setup_bytes(struct ibf_load *load, VALUE loader_obj, const char *bytes, size_t size)
+ {
+@@ -13282,9 +13312,7 @@ ibf_load_setup_bytes(struct ibf_load *load, VALUE loader_obj, const char *bytes,
+         rb_raise(rb_eRuntimeError, "unmatched version file (%u.%u for %u.%u)",
+                  load->header->major_version, load->header->minor_version, IBF_MAJOR_VERSION, IBF_MINOR_VERSION);
+     }
+-    if (strcmp(load->global_buffer.buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
+-        rb_raise(rb_eRuntimeError, "unmatched platform");
+-    }
++    ibf_load_check_platform(load->global_buffer.buff + sizeof(struct ibf_header));
+     if (load->header->iseq_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
+         rb_raise(rb_eArgError, "unaligned iseq list offset: %u",
+                  load->header->iseq_list_offset);

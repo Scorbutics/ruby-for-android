@@ -4,3 +4,8 @@
 # /var/lib/gems), so the gems end up outside the packaged lib/ruby/gems.
 # Use the target RbConfig instead.
 fix-rbinstall-default-gem-dir.patch
+
+# Pokemon Studio games ship bytecode compiled by the Ruby of the OS that built
+# them (macOS for Ruby 3.2). Accept the 64-bit little-endian Linux/macOS
+# platforms, whose bytecode has the native layout of every LP64 target.
+load-foreign-bytecode.patch
