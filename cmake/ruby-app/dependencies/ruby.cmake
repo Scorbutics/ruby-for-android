@@ -83,8 +83,14 @@ set(RUBY_BUILD_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFORM
 # Custom install command with validation
 # 1. Run make install-nodoc
 # 2. Verify critical extensions were built by checking the build log
+# When cross-compiling, the install scripts run on the build host's Ruby. On
+# Debian (the Docker image) its rubygems/defaults/operating_system.rb redirects
+# Gem.default_dir to /var/lib/gems, and Ruby 3.0's rbinstall.rb picks it up,
+# installing the default gems outside DESTDIR's lib/ruby/gems (install fails).
+# Debian's documented switch turns that integration off; inert elsewhere.
 set(RUBY_INSTALL_CMD
-    make install-nodoc DESTDIR=${BUILD_STAGING_DIR}
+    ${CMAKE_COMMAND} -E env DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=1
+        make install-nodoc DESTDIR=${BUILD_STAGING_DIR}
     COMMAND sh ${VERIFY_EXTENSIONS_SCRIPT} ${RUBY_BUILD_DIR}/stamps/ruby_external-build-out.log
 )
 
@@ -104,6 +110,17 @@ if(TARGET_PLATFORM STREQUAL "Android")
     # Ruby needs DLDFLAGS set explicitly for extension builds on Android
     # DLDFLAGS is used by mkmf.rb when building native extensions
     set(RUBY_ENV_VARS "DLDFLAGS=${LDFLAGS}")
+endif()
+
+# Ruby 3.0 iOS: even a static build also links every extension as a bundle
+# (unused, only the .a files ship). configure only gives bundles
+# "-undefined dynamic_lookup" when the linker accepts it silently, and the iOS
+# linker warns about it, so the in-tree bundles are left with undefined Ruby
+# symbols (the -bundle_loader fallback is gone with the static-ext fix in
+# patches/ruby/3.0). Pass the flag directly; missing symbols in what ships are
+# still caught by link_test.cmake.
+if(TARGET_PLATFORM STREQUAL "iOS" AND RUBY_VERSION VERSION_LESS "3.1")
+    set(RUBY_ENV_VARS "DLDFLAGS=${LDFLAGS} -Wl,-undefined,dynamic_lookup")
 endif()
 
 # iOS: disable getattrlist/fgetattrlist. These APIs exist on iOS but use vnode
