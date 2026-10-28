@@ -34,7 +34,7 @@ ncurses → readline → ruby
 | Dependency | Version | Purpose |
 |------------|---------|---------|
 | Ruby       | 3.0.7 / 3.1.1 / 3.2.11 / 3.3.13 | Main CRuby interpreter |
-| libyaml    | 0.2.5   | YAML for psych (Ruby 3.2+ only; bundled before) |
+| libyaml    | 0.2.5   | YAML for psych (all versions, so the host's libyaml is never used) |
 | OpenSSL    | 1.1.1m  | SSL/TLS support |
 | GDBM       | 1.18.1  | DBM database support |
 | ncurses    | 6.4     | Terminal control |

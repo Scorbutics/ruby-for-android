@@ -21,15 +21,15 @@ set(RUBY_CONFIGURE_CMD
     --with-openssl-dir=${BUILD_STAGING_DIR}/usr/local
 )
 
-# Ruby 3.2 stopped bundling libffi (ext/fiddle) and libyaml (ext/psych), so
-# both extensions now need the libraries this project builds. They install
-# under usr/local, outside --with-opt-dir.
-if(RUBY_VERSION VERSION_GREATER_EQUAL "3.2")
-    list(APPEND RUBY_CONFIGURE_CMD
-        --with-libffi-dir=${BUILD_STAGING_DIR}/usr/local
-        --with-libyaml-dir=${BUILD_STAGING_DIR}/usr/local
-    )
-endif()
+# fiddle and psych always link the libffi and libyaml this project builds
+# (installed under usr/local, outside --with-opt-dir). Ruby 3.2+ no longer
+# bundles them; Ruby 3.0/3.1 bundle them but only use the copies when no
+# libyaml/libffi is found, which would make the result depend on what the
+# build host has installed.
+list(APPEND RUBY_CONFIGURE_CMD
+    --with-libffi-dir=${BUILD_STAGING_DIR}/usr/local
+    --with-libyaml-dir=${BUILD_STAGING_DIR}/usr/local
+)
 
 # Use BUILD_SHARED_LIBS to control Ruby build mode
 if(BUILD_SHARED_LIBS)
@@ -74,10 +74,7 @@ set(RUBY_INSTALL_CMD
 # Build Ruby (depends on all other libraries)
 # Static dependencies: zlib, gmp, libxcrypt (Linux only)
 # Shared dependencies from system: openssl, gdbm, readline, ncurses
-set(RUBY_DEPENDENCIES zlib gmp libffi openssl gdbm readline)
-if(RUBY_NEEDS_LIBYAML)
-    list(APPEND RUBY_DEPENDENCIES libyaml)
-endif()
+set(RUBY_DEPENDENCIES zlib gmp libffi libyaml openssl gdbm readline)
 
 # Add libxcrypt for Linux builds only (Android's Bionic doesn't provide crypt)
 if(TARGET_PLATFORM STREQUAL "Linux")

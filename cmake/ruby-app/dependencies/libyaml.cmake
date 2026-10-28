@@ -1,25 +1,20 @@
 # libyaml.cmake
 # Configuration for libyaml, required by Ruby's psych extension (YAML).
-# Ruby 3.0/3.1 bundle the libyaml sources inside ext/psych; Ruby 3.2 dropped
-# them, so this dependency is only declared for 3.2+ (see ruby-versions.cmake).
+# Built for every Ruby version: 3.2+ no longer bundle it, and 3.0/3.1 are
+# pointed at it too so psych never picks up the build host's libyaml.
 
 set(LIBYAML_VERSION "0.2.5")
 set(LIBYAML_URL "https://github.com/yaml/libyaml/releases/download/${LIBYAML_VERSION}/yaml-${LIBYAML_VERSION}.tar.gz")
 set(LIBYAML_HASH "SHA256=c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4")
 
-# Configure command (autoconf-based)
-if(BUILD_SHARED_LIBS)
-    set(LIBYAML_CONFIGURE_LIB_TYPE
-        --enable-shared
-        --disable-static
-    )
-else()
-    set(LIBYAML_CONFIGURE_LIB_TYPE
-        --disable-shared
-        --enable-static
-        --with-pic
-    )
-endif()
+# Always static and PIC, also for shared builds: psych then carries libyaml
+# itself (psych.so, or libruby-ext.a), so no libyaml.so has to be shipped,
+# as when Ruby 3.0/3.1 compiled the bundled copy into psych.
+set(LIBYAML_CONFIGURE_LIB_TYPE
+    --disable-shared
+    --enable-static
+    --with-pic
+)
 
 set(LIBYAML_CONFIGURE_CMD
     ./configure

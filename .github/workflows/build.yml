@@ -53,6 +53,9 @@ jobs:
       - name: Check Ruby patches
         run: cmake -DWORK_DIR="$RUNNER_TEMP/ruby-patches" -P cmake/ruby-app/tests/check_ruby_patches.cmake
 
+      - name: Check extension archive combining
+        run: cmake -DWORK_DIR="$RUNNER_TEMP/combine-check" -P cmake/ruby-app/tests/check_combine_extensions.cmake
+
   build:
     needs: [prepare, check-patches]
     strategy:
@@ -125,10 +128,9 @@ jobs:
             build-essential cmake ruby-dev ninja-build \
             libtool autoconf automake libncurses-dev \
             zip unzip wget gettext patch
-          # Remove system libffi-dev and libyaml-dev so Ruby never links them:
-          # Ruby 3.0/3.1 use their bundled copies (ext/fiddle/libffi,
-          # ext/psych/yaml), Ruby 3.2+ the libffi/libyaml this project builds.
-          # Either way the static symbols end up in libruby-ext.a.
+          # Remove system libffi-dev and libyaml-dev so Ruby can only link
+          # the static libffi/libyaml this project builds (folded into
+          # libruby-ext.a), never the runner's shared ones.
           sudo apt-get remove -y libffi-dev libyaml-dev 2>/dev/null || true
 
       - name: Install build dependencies (macOS)

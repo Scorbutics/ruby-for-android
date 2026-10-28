@@ -74,9 +74,8 @@ if(EXISTS "${BUILD_STAGING_DIR}/usr/local/lib/libruby-ext.a")
     list(APPEND LIBS -lruby-ext)
 endif()
 # Ruby depends on these (order matters for static linking):
-# Note: libffi and libyaml are bundled inside Ruby (ext/fiddle, ext/psych) up to
-# 3.1, and folded into libruby-ext.a by combine_ruby_extensions.cmake from 3.2:
-# either way their symbols are in libruby-ext.a, not separate .a files.
+# Note: libffi and libyaml are folded into libruby-ext.a by
+# combine_ruby_extensions.cmake, so they are not separate .a files here.
 list(APPEND LIBS -lssl -lcrypto -lgdbm -lreadline -lncurses -lgmp -lz)
 
 # Platform-specific system libraries

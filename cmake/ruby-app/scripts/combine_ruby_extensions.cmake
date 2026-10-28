@@ -68,24 +68,44 @@ endforeach()
 # Use the filtered list
 set(ALL_EXT_LIBS ${FILTERED_EXT_LIBS})
 
-# Ruby 3.2+ no longer bundles libffi (fiddle) and libyaml (psych): both
-# extensions link the libraries this project builds instead. Fold those into
-# libruby-ext.a too, so consumers link the same set of archives whatever the
-# Ruby version.
-if(NOT SEEN_LIBFFI)
-    if(NOT STAGING_LIB_DIR OR NOT EXISTS "${STAGING_LIB_DIR}/libffi.a")
-        message(FATAL_ERROR "No bundled libffi in ${RUBY_SRC_DIR}/ext/fiddle and no libffi.a in STAGING_LIB_DIR='${STAGING_LIB_DIR}'")
+# fiddle and psych link libffi/libyaml with -lffi/-lyaml when they use the
+# libraries this project builds (always on Ruby 3.2+, which no longer bundles
+# them), instead of compiling bundled copies into their own archive. Fold those
+# into libruby-ext.a too, so consumers link the same set of archives whatever
+# the Ruby version. The decision comes from each extension's generated
+# Makefile: the bundled sources stay in the 3.0/3.1 tree even when unused.
+function(_ext_links_external_lib ext lib out_var)
+    set(${out_var} FALSE PARENT_SCOPE)
+    set(_makefile "${RUBY_SRC_DIR}/ext/${ext}/Makefile")
+    if(NOT EXISTS "${_makefile}")
+        message(FATAL_ERROR "${_makefile} not found: was ext/${ext} built?")
     endif()
-    message(STATUS "  Including external libffi: ${STAGING_LIB_DIR}/libffi.a")
-    list(APPEND ALL_EXT_LIBS "${STAGING_LIB_DIR}/libffi.a")
-endif()
-if(NOT EXISTS "${RUBY_SRC_DIR}/ext/psych/yaml")
-    if(NOT STAGING_LIB_DIR OR NOT EXISTS "${STAGING_LIB_DIR}/libyaml.a")
-        message(FATAL_ERROR "No bundled libyaml in ${RUBY_SRC_DIR}/ext/psych and no libyaml.a in STAGING_LIB_DIR='${STAGING_LIB_DIR}'")
+    file(STRINGS "${_makefile}" _libs_line REGEX "^LIBS = ")
+    if(_libs_line MATCHES "(^| )-l${lib}( |$)")
+        set(${out_var} TRUE PARENT_SCOPE)
     endif()
-    message(STATUS "  Including external libyaml: ${STAGING_LIB_DIR}/libyaml.a")
-    list(APPEND ALL_EXT_LIBS "${STAGING_LIB_DIR}/libyaml.a")
-endif()
+endfunction()
+
+foreach(_pair "fiddle|ffi|libffi" "psych|yaml|libyaml")
+    string(REPLACE "|" ";" _pair "${_pair}")
+    list(GET _pair 0 _ext)
+    list(GET _pair 1 _lib)
+    list(GET _pair 2 _archive)
+    _ext_links_external_lib(${_ext} ${_lib} _external)
+    if(_ext STREQUAL "fiddle" AND SEEN_LIBFFI)
+        # Bundled libffi built as libffi_convenience.a, already included
+        set(_external FALSE)
+    endif()
+    if(_external)
+        if(NOT STAGING_LIB_DIR OR NOT EXISTS "${STAGING_LIB_DIR}/${_archive}.a")
+            message(FATAL_ERROR "ext/${_ext} links -l${_lib} but there is no ${_archive}.a in STAGING_LIB_DIR='${STAGING_LIB_DIR}'")
+        endif()
+        message(STATUS "  Including external ${_archive}: ${STAGING_LIB_DIR}/${_archive}.a")
+        list(APPEND ALL_EXT_LIBS "${STAGING_LIB_DIR}/${_archive}.a")
+    else()
+        message(STATUS "  ${_archive} is compiled into ext/${_ext} (bundled copy)")
+    endif()
+endforeach()
 
 if(NOT ALL_EXT_LIBS)
     message(FATAL_ERROR "No extension .a files found in ${RUBY_SRC_DIR}")
@@ -109,11 +129,16 @@ set(ALL_OBJECTS "${EXTINIT_OBJ}" "${ENCINIT_OBJ}")
 message(STATUS "Including extinit.o for static extension initialization")
 message(STATUS "Including encinit.o for static encoding initialization")
 
-# Extract all .o files from each .a file into the temp directory
+# Extract all .o files from each .a file into the temp directory.
+# Archive and object names are not unique across extensions (Ruby 3.2+ has
+# both ext/cgi/escape/escape.a and ext/erb/escape/escape.a, each with an
+# escape.o), and `ar r` replaces a member of the same name: number every
+# archive and prefix its objects with that number so none is lost.
+set(lib_index 0)
 foreach(ext_lib ${ALL_EXT_LIBS})
-    # Get the library name for creating a unique subdirectory
+    math(EXPR lib_index "${lib_index} + 1")
     get_filename_component(lib_name "${ext_lib}" NAME_WE)
-    set(extract_dir "${TEMP_DIR}/${lib_name}")
+    set(extract_dir "${TEMP_DIR}/${lib_index}_${lib_name}")
     file(MAKE_DIRECTORY "${extract_dir}")
 
     # Extract objects from this archive
@@ -127,9 +152,14 @@ foreach(ext_lib ${ALL_EXT_LIBS})
         message(FATAL_ERROR "Failed to extract objects from ${ext_lib}")
     endif()
 
-    # Collect all .o files from this extraction
+    # Collect all .o files from this extraction, renamed to be unique
     file(GLOB objects "${extract_dir}/*.o")
-    list(APPEND ALL_OBJECTS ${objects})
+    foreach(obj ${objects})
+        get_filename_component(obj_name "${obj}" NAME)
+        set(unique_obj "${extract_dir}/${lib_index}_${obj_name}")
+        file(RENAME "${obj}" "${unique_obj}")
+        list(APPEND ALL_OBJECTS "${unique_obj}")
+    endforeach()
 endforeach()
 
 if(NOT ALL_OBJECTS)

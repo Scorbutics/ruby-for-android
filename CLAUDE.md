@@ -91,6 +91,12 @@ Check that every Ruby patch applies on every supported version and platform
 cmake -DWORK_DIR=/tmp/ruby-patches -P cmake/ruby-app/tests/check_ruby_patches.cmake
 ```
 
+Check that `libruby-ext.a` keeps every extension object (same-named archives such as
+the two `escape.a` of Ruby 3.2+) and folds the external libyaml/libffi (host C compiler):
+```bash
+cmake -DWORK_DIR=/tmp/combine-check -P cmake/ruby-app/tests/check_combine_extensions.cmake
+```
+
 Deploy `ruby_full-{platform}.zip` to target, extract, then:
 ```bash
 . setup_ruby.sh /path/to/ruby <major.minor>.0 aarch64

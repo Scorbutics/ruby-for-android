@@ -6,8 +6,7 @@
 # the Ruby minor version that produced it, so one build exists per minor.
 #
 # Select the version with -DRUBY_VERSION=X.Y.Z (./configure --with-ruby-version).
-# Included from the top-level CMakeLists.txt before any dependency, because
-# the dependency list itself depends on the version (libyaml, see below).
+# Included from the top-level CMakeLists.txt before any dependency.
 
 set(RUBY_VERSION "3.0.7" CACHE STRING "Ruby version to build (one of RUBY_SUPPORTED_VERSIONS)")
 
@@ -38,13 +37,5 @@ endif()
 string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.[0-9]+$" _ "${RUBY_VERSION}")
 set(RUBY_MAJOR_VERSION "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")   # e.g. 3.0
 set(RUBY_ABI_VERSION "${RUBY_MAJOR_VERSION}.0")                 # include/lib path component
-
-# Ruby 3.2 stopped bundling the libyaml sources in ext/psych, so psych needs
-# libyaml as a real dependency from then on.
-if(RUBY_VERSION VERSION_GREATER_EQUAL "3.2")
-    set(RUBY_NEEDS_LIBYAML TRUE)
-else()
-    set(RUBY_NEEDS_LIBYAML FALSE)
-endif()
 
 message(STATUS "Ruby version: ${RUBY_VERSION} (ABI ${RUBY_ABI_VERSION})")

@@ -13,11 +13,7 @@ include(Main)
 # ============================================================================
 include("${CMAKE_SOURCE_DIR}/cmake/ruby-app/ruby-versions.cmake")
 
-set(RUBY_APP_DEPENDENCIES zlib gmp libffi ncurses readline gdbm openssl libmd libbsd libxcrypt)
-if(RUBY_NEEDS_LIBYAML)
-    list(APPEND RUBY_APP_DEPENDENCIES libyaml)
-endif()
-list(APPEND RUBY_APP_DEPENDENCIES ruby)
+set(RUBY_APP_DEPENDENCIES zlib gmp libffi libyaml ncurses readline gdbm openssl libmd libbsd libxcrypt ruby)
 
 declare_application(
     APP_NAME "CRuby"
