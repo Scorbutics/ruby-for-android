@@ -4,3 +4,9 @@
 # "ld: -bundle_loader missing <path>". 3.1+ parse the option first. Only the
 # generated configure is patched (no darwin change elsewhere, inert on Linux/Android).
 fix-darwin-static-ext-bundle-loader.patch
+
+# Ruby 3.0's rbinstall.rb installs default/bundled gems into Gem.default_dir
+# of the Ruby running it: on a cross build that is the host Ruby, whose
+# operating_system.rb may redirect it (Debian /var/lib/gems, Homebrew
+# /opt/homebrew), so make install fails. Use the target RbConfig instead.
+fix-rbinstall-default-gem-dir.patch

@@ -1,0 +1,26 @@
+--- a/tool/rbinstall.rb
++++ b/tool/rbinstall.rb
+@@ -902,7 +902,10 @@
+ end
+ 
+ def install_default_gem(dir, srcdir)
+-  gem_dir = Gem.default_dir
++  # The target's gem dir (Gem.default_dir's formula on the target RbConfig):
++  # Gem.default_dir comes from the Ruby running this script, which a cross
++  # build's host Ruby may redirect (Debian, Homebrew operating_system.rb).
++  gem_dir = File.join(CONFIG["rubylibprefix"], "gems", CONFIG["ruby_version"])
+   install_dir = with_destdir(gem_dir)
+   prepare "default gems from #{dir}", gem_dir
+   makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
+@@ -948,7 +951,10 @@
+ end
+ 
+ install?(:ext, :comm, :gem, :'bundled-gems') do
+-  gem_dir = Gem.default_dir
++  # The target's gem dir (Gem.default_dir's formula on the target RbConfig):
++  # Gem.default_dir comes from the Ruby running this script, which a cross
++  # build's host Ruby may redirect (Debian, Homebrew operating_system.rb).
++  gem_dir = File.join(CONFIG["rubylibprefix"], "gems", CONFIG["ruby_version"])
+   install_dir = with_destdir(gem_dir)
+   prepare "bundled gems", gem_dir
+   makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
