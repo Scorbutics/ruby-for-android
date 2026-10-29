@@ -192,6 +192,31 @@ function(add_external_dependency)
         endif()
     endif()
 
+    # A changed pin (URL, git tag) or patch rebuilds the dependency from
+    # scratch. ExternalProject alone doesn't notice: the git info CMake 3.22
+    # records doesn't hold the tag, so a new GIT_TAG never re-clones, and the
+    # patch step only runs after a download. The pin of the last configure is
+    # kept next to the stamps; a build tree without one predates this check,
+    # so it is rebuilt too.
+    set(_DEP_PIN "${DEP_URL} ${DEP_URL_HASH} ${DEP_GIT_REPOSITORY} ${DEP_GIT_TAG}")
+    foreach(_PATCH_PATH ${PATCH_LIST})
+        file(SHA256 "${_PATCH_PATH}" _PATCH_HASH)
+        string(APPEND _DEP_PIN " ${_PATCH_HASH}")
+    endforeach()
+    set(_DEP_PIN_FILE "${BUILD_DIR}/${DEP_NAME}-pin.txt")
+    set(_DEP_OLD_PIN "")
+    if(EXISTS "${_DEP_PIN_FILE}")
+        file(READ "${_DEP_PIN_FILE}" _DEP_OLD_PIN)
+    endif()
+    if(NOT _DEP_OLD_PIN STREQUAL _DEP_PIN)
+        if(EXISTS "${BUILD_DIR}/stamps")
+            message(STATUS "  ${DEP_NAME}: pin or patches changed, rebuilding it from scratch")
+            # SOURCE_DIR and BUILD_DIR are under CMAKE_BINARY_DIR (set above)
+            file(REMOVE_RECURSE "${BUILD_DIR}/stamps" "${BUILD_DIR}/tmp" "${SOURCE_DIR}")
+        endif()
+        file(WRITE "${_DEP_PIN_FILE}" "${_DEP_PIN}")
+    endif()
+
     # Create the ExternalProject
     ExternalProject_Add(${DEP_NAME}_external
         ${DOWNLOAD_PARAMS}

@@ -87,6 +87,23 @@ if(NOT DEFINED COMBINE_WORKDIR)
     set(COMBINE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/fat_library_workdir")
 endif()
 
+# Run on every build: merge only when an input is newer than the output
+# (IS_NEWER_THAN is also true for equal timestamps: then merge, to be safe)
+if(EXISTS "${COMBINE_OUTPUT}")
+    set(_STALE_INPUT "")
+    foreach(lib ${EXISTING_LIBS})
+        if("${lib}" IS_NEWER_THAN "${COMBINE_OUTPUT}")
+            set(_STALE_INPUT "${lib}")
+            break()
+        endif()
+    endforeach()
+    if(NOT _STALE_INPUT)
+        message(STATUS "Fat library up to date: ${COMBINE_OUTPUT}")
+        return()
+    endif()
+    message(STATUS "Fat library older than ${_STALE_INPUT}: merging again")
+endif()
+
 # Call the function
 combine_fat_library(
     OUTPUT ${COMBINE_OUTPUT}
