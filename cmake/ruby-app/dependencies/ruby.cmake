@@ -48,6 +48,14 @@ if(RUBY_VERSION VERSION_LESS "3.1")
     list(APPEND RUBY_CONFIGURE_CMD --with-dbm-type=gdbm_compat)
 endif()
 
+# Ruby 3.0's configure picks its native arm64 coroutines for arm64-darwin
+# only: for the aarch64-apple-darwin triplet the Apple builds use, it falls
+# back to ucontext, which arm64 Darwin does not support (any Fiber crashed
+# macOS and iOS). Name them.
+if(RUBY_VERSION VERSION_LESS "3.1" AND HOST_TRIPLET MATCHES "^aarch64-apple-")
+    list(APPEND RUBY_CONFIGURE_CMD --with-coroutine=arm64)
+endif()
+
 # Use BUILD_SHARED_LIBS to control Ruby build mode
 if(BUILD_SHARED_LIBS)
     list(APPEND RUBY_CONFIGURE_CMD --enable-shared)
