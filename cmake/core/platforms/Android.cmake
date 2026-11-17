@@ -69,13 +69,13 @@ message(STATUS "Android Host Tag: ${ANDROID_HOST_TAG}")
 
 # Detect toolchain paths
 if(DEFINED CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX)
-    set(TOOLCHAIN_PREFIX "${CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX}")
+    # A tool prefix (.../bin/llvm-): its directory is bin
+    get_filename_component(TOOLCHAIN_BIN "${CMAKE_CXX_ANDROID_TOOLCHAIN_PREFIX}" DIRECTORY)
 else()
-    # Fallback: construct from NDK path using detected host platform
-    set(TOOLCHAIN_PREFIX "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${ANDROID_HOST_TAG}/bin/")
+    # Not set by recent NDK toolchains (r28 with CMake 3.28): the bin
+    # directory from the NDK path and the detected host platform
+    set(TOOLCHAIN_BIN "${CMAKE_ANDROID_NDK}/toolchains/llvm/prebuilt/${ANDROID_HOST_TAG}/bin")
 endif()
-
-get_filename_component(TOOLCHAIN_BIN "${TOOLCHAIN_PREFIX}" DIRECTORY)
 message(STATUS "Toolchain bin directory: ${TOOLCHAIN_BIN}")
 
 # Set cross-compilation tools
