@@ -24,3 +24,9 @@ load-foreign-bytecode.patch
 # The implementation is sources/ruby/3.0/thread_event_hooks.c (+ headers);
 # this patch fires the events in thread_pthread.c and builds the object.
 internal-thread-event-hooks.patch
+
+# Xcode 16.3+'s clang rejects bigdecimal's ENTER: a C23 [[maybe_unused]]
+# after the array declarator vStack[n] applies to its type ("'maybe_unused'
+# attribute cannot be applied to types"). Put it before the declaration,
+# as the bigdecimal of Ruby 3.2 does.
+fix-bigdecimal-maybe-unused.patch
