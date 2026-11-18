@@ -2,9 +2,9 @@
 # Configuration for libffi (Foreign Function Interface) dependency
 # Required by Ruby's fiddle extension for calling native C functions at runtime
 
-set(LIBFFI_VERSION "3.4.6")
+set(LIBFFI_VERSION "3.4.8")
 set(LIBFFI_URL "https://github.com/libffi/libffi/releases/download/v${LIBFFI_VERSION}/libffi-${LIBFFI_VERSION}.tar.gz")
-set(LIBFFI_HASH "SHA256=b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e")
+set(LIBFFI_HASH "SHA256=bc9842a18898bfacb0ed1252c4febcc7e78fa139fd27fdc7a3e30d9d9356119b")
 
 # Configure command (autoconf-based)
 if(BUILD_SHARED_LIBS)
