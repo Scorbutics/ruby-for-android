@@ -91,7 +91,7 @@ jobs:
           # iOS device (arm64)
           - platform: ios-device
             triplet: aarch64-apple-ios-device
-            runner: macos-14
+            runner: macos-15
             use_docker: false
             toolchain: arm64-ios-device-toolchain.params
             build_type: static
@@ -99,7 +99,7 @@ jobs:
           # iOS simulator (arm64)
           - platform: ios-simulator
             triplet: aarch64-apple-ios-simulator
-            runner: macos-14
+            runner: macos-15
             use_docker: false
             toolchain: arm64-ios-simulator-toolchain.params
             build_type: static
@@ -107,7 +107,7 @@ jobs:
           # macOS ARM64 (Apple Silicon)
           - platform: macos-arm64
             triplet: aarch64-apple-darwin
-            runner: macos-14
+            runner: macos-15
             use_docker: false
             toolchain: arm64-macos-toolchain.params
             build_type: static
