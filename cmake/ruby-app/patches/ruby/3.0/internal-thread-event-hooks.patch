@@ -1,0 +1,90 @@
+--- a/common.mk
++++ b/common.mk
+@@ -138,6 +138,7 @@ COMMONOBJS    = array.$(OBJEXT) \
+ 		struct.$(OBJEXT) \
+ 		symbol.$(OBJEXT) \
+ 		thread.$(OBJEXT) \
++		thread_event_hooks.$(OBJEXT) \
+ 		time.$(OBJEXT) \
+ 		transcode.$(OBJEXT) \
+ 		transient_heap.$(OBJEXT) \
+--- a/include/ruby/thread.h
++++ b/include/ruby/thread.h
+@@ -12,6 +12,7 @@
+  */
+ #include "ruby/intern.h"
+ #include "ruby/internal/dllexport.h"
++#include "ruby/thread_event_hooks.h"
+ 
+ /* flags for rb_nogvl */
+ #define RB_NOGVL_INTR_FAIL       (0x1)
+--- a/thread_pthread.c
++++ b/thread_pthread.c
+@@ -13,6 +13,7 @@
+ 
+ #include "gc.h"
+ #include "mjit.h"
++#include "internal/thread_event_hooks.h"
+ 
+ #ifdef HAVE_SYS_RESOURCE_H
+ #include <sys/resource.h>
+@@ -234,6 +235,7 @@ do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+ static void
+ gvl_acquire_common(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+ {
++    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
+     if (gvl->owner) {
+         native_thread_data_t *nd = &th->native_thread_data;
+ 
+@@ -262,6 +264,9 @@ gvl_acquire_common(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+         gvl->timer_err = ETIMEDOUT;
+     }
+     gvl->owner = th;
++
++    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
++
+     if (!gvl->timer) {
+         if (!designate_timer_thread(gvl) && !ubf_threads_empty()) {
+             rb_thread_wakeup_timer_thread(-1);
+@@ -291,6 +296,7 @@ gvl_release_common(rb_global_vm_lock_t *gvl)
+ static void
+ gvl_release(rb_global_vm_lock_t *gvl)
+ {
++    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+     rb_native_mutex_lock(&gvl->lock);
+     gvl_release_common(gvl);
+     rb_native_mutex_unlock(&gvl->lock);
+@@ -306,6 +312,7 @@ gvl_yield(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+      * (perhaps looping in io_close_fptr) so we kick them:
+      */
+     ubf_wakeup_all_threads();
++    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+     rb_native_mutex_lock(&gvl->lock);
+     next = gvl_release_common(gvl);
+ 
+@@ -989,12 +996,17 @@ thread_start_func_1(void *th_ptr)
+ 	native_thread_init_stack(th);
+ #endif
+ 	native_thread_init(th);
++
++        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED);
++
+ 	/* run */
+ #if defined USE_NATIVE_THREAD_INIT
+         thread_start_func_2(th, th->ec->machine.stack_start);
+ #else
+         thread_start_func_2(th, &stack_start);
+ #endif
++
++        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
+     }
+ #if USE_THREAD_CACHE
+     /* cache thread */
+@@ -2091,6 +2103,7 @@ ubf_ppoll_sleep(void *ignore)
+     const native_thread_data_t *next; \
+     rb_global_vm_lock_t *gvl = rb_ractor_gvl(th->ractor); \
+     RB_GC_SAVE_MACHINE_CONTEXT(th); \
++    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED); \
+     rb_native_mutex_lock(&gvl->lock); \
+     next = gvl_release_common(gvl); \
+     rb_native_mutex_unlock(&gvl->lock); \

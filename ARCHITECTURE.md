@@ -63,7 +63,16 @@ cmake/core/        Generic build system (reusable across projects)
 cmake/ruby-app/    Ruby application layer
   dependencies/      Per-dependency configs (ncurses, readline, gdbm, openssl, ruby)
   patches/           Organized by {lib}/{platform}/series + *.patch
+  sources/ruby/X.Y/  New Ruby source files of our own, laid out as in the Ruby tree
 ```
+
+New code (functions, structures, public headers) is not put in patches: it lives
+in `sources/ruby/<major.minor>/`, copied over the Ruby tree after the patches and
+before configure (`add_sources` step, `ruby.cmake`). The patch only wires it in:
+call sites, `#include` lines, the object in `common.mk`'s `COMMONOBJS`. Ruby 3.0's
+internal thread events (`rb_internal_thread_add_event_hook`, backported from 3.2)
+are done this way: `thread_event_hooks.c` + its headers, fired from `thread_pthread.c`
+by `internal-thread-event-hooks.patch`.
 
 ## Patch Categories
 

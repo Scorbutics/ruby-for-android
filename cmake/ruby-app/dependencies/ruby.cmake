@@ -159,6 +159,23 @@ add_external_dependency(
 # would work too but requires the project to be finalized.
 set(_RUBY_SOURCE_DIR "${CMAKE_BINARY_DIR}/ruby/build_dir/${TARGET_ARCH}-${PLATFORM_LOWER}/ruby-${RUBY_VERSION}")
 
+# New source files of our own (sources/ruby/<major.minor>/, laid out as in the
+# Ruby tree): copied over it after the patches and before configure. A patch
+# only wires them in (call sites, #include, the object in common.mk), so the
+# new code stays in plain files instead of in patches.
+string(REGEX MATCH "^[0-9]+\\.[0-9]+" _RUBY_MINOR "${RUBY_VERSION}")
+set(_RUBY_EXTRA_SOURCES "${CMAKE_CURRENT_LIST_DIR}/../sources/ruby/${_RUBY_MINOR}")
+if(IS_DIRECTORY "${_RUBY_EXTRA_SOURCES}")
+    file(GLOB_RECURSE _RUBY_EXTRA_SOURCE_FILES "${_RUBY_EXTRA_SOURCES}/*")
+    ExternalProject_Add_Step(ruby_external add_sources
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${_RUBY_EXTRA_SOURCES}" "${_RUBY_SOURCE_DIR}"
+        DEPENDEES patch
+        DEPENDERS configure
+        DEPENDS ${_RUBY_EXTRA_SOURCE_FILES}
+        COMMENT "Adding sources/ruby/${_RUBY_MINOR} to the Ruby tree"
+    )
+endif()
+
 # Ruby bundles the `debug` gem since 3.1. For older versions, fetch the same
 # release 3.3 bundles (it supports Ruby >= 2.7) so remote DAP debugging works
 # the same on every build.

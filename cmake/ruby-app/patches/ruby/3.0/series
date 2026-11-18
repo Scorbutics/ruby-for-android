@@ -17,3 +17,10 @@ fix-rbinstall-default-gem-dir.patch
 # dumps) and widen its words while loading. Also detects the bytecode of Ruby
 # 3.0.0-3.0.2, whose iseq bodies lack outer_variables (same format version).
 load-foreign-bytecode.patch
+
+# Ruby 3.2's internal thread events (rb_internal_thread_add_event_hook, same
+# API and firing points): LiteRGSS3's raylib backend hands its single GL
+# context to the thread holding the GVL with them, so it runs on Ruby 3.0.
+# The implementation is sources/ruby/3.0/thread_event_hooks.c (+ headers);
+# this patch fires the events in thread_pthread.c and builds the object.
+internal-thread-event-hooks.patch
